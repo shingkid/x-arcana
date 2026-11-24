@@ -1,0 +1,26 @@
+{
+  "Demon": {
+    "sha256": "438c29483311876aa896a17c6b72a579f86e51f078e2728aa7aca14b676c75dc",
+    "bytes": 5781534,
+    "members": [
+      "Demon.usdc",
+      "textures/Demon-normal.png",
+      "textures/Demon-color.png"
+    ],
+    "corrupt_member": null
+  },
+  "Stag": {
+    "sha256": "66b5935bdf32bb9f0ac62538e98a278674462b5ac1702fb1d94dba868843341d",
+    "bytes": 8579390,
+    "members": [
+      "Stag.usdc",
+      "textures/Stag-Body-normal.png",
+      "textures/Stag-Body-color.png",
+      "textures/Stag-Head-normal.png",
+      "textures/Stag-Head-color.png",
+      "textures/Stag-Antlers-normal.png",
+      "textures/Stag-Antlers-color.png"
+    ],
+    "corrupt_member": null
+  }
+}

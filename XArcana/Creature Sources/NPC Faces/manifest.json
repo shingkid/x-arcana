@@ -1,0 +1,8 @@
+{
+  "count": 42,
+  "generator": "Tools/PreparePublicAssets.py",
+  "license": "CC0-1.0",
+  "provenance": "Original procedural robot icons and geometric bodies; no photographs or imported prototype geometry.",
+  "runtimeManifest": "Resources/PublicAssets.json",
+  "schemaVersion": 1
+}

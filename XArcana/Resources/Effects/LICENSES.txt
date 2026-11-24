@@ -1,0 +1,21 @@
+X ARCANA ANIMATED SPELL ACCENTS
+
+2D Spell Effects by Mikodrak / Martin Jelinek, created for Nyrthos, 2013.
+Source: https://opengameart.org/content/2d-spell-effects
+Original download: https://opengameart.org/sites/default/files/FX.zip
+License: CC0 1.0 Universal.
+License URL: https://creativecommons.org/publicdomain/zero/1.0/
+Selected sequence: fx1_blue_topEffect.
+
+25 special effects rendered with blender by rubberduck, 2014.
+Source: https://opengameart.org/content/25-special-effects-rendered-with-blender
+Original download: https://opengameart.org/sites/default/files/blender-volumetric-particles-effects.zip
+License: CC0 1.0 Universal.
+License URL: https://creativecommons.org/publicdomain/zero/1.0/
+Selected sequences: explosion/fire, explosion/blueish_smoke, ring/blueish_smoke, ring/magic.
+
+Adaptation: selected original PNG frames packed into padded atlases without resizing.
+The runtime may tint, scale, and change playback duration to fit the spell.
+Original ZIP files, frame hashes, and the reproducible atlas exporter are retained in Fantasy Sources/Spell FX.
+Source pages and licenses were checked on 25 November 2026.
+The authors do not endorse X Arcana.

@@ -1,0 +1,135 @@
+{
+  "id": "fantasy",
+  "displayName": "Fantasy hall",
+  "scene": {
+    "name": "FantasyRoom",
+    "fileExtension": "usdz",
+    "subdirectory": "Fantasy"
+  },
+  "floorY": 0,
+  "movementBounds": {
+    "minX": -2.2,
+    "maxX": 2.2,
+    "minZ": -4.8,
+    "maxZ": 3.9
+  },
+  "projectileBounds": {
+    "minX": -5,
+    "maxX": 5,
+    "minZ": -7,
+    "maxZ": 6
+  },
+  "enemySpawns": [
+    {
+      "x": -1.8,
+      "y": 0,
+      "z": -1.8
+    },
+    {
+      "x": 0.4,
+      "y": 0,
+      "z": -1.5
+    },
+    {
+      "x": 1.9,
+      "y": 0,
+      "z": -2.8
+    },
+    {
+      "x": -0.7,
+      "y": 0,
+      "z": -2.9
+    },
+    {
+      "x": -2,
+      "y": 0,
+      "z": -4.3
+    },
+    {
+      "x": 0.8,
+      "y": 0,
+      "z": -4.5
+    },
+    {
+      "x": -0.3,
+      "y": 0,
+      "z": -4.4
+    },
+    {
+      "x": 2.1,
+      "y": 0,
+      "z": -4.5
+    }
+  ],
+  "camera": {
+    "position": {
+      "x": 0,
+      "y": 1.65,
+      "z": 4.8
+    },
+    "lookAt": {
+      "x": 0,
+      "y": 1.65,
+      "z": -2.6
+    },
+    "horizontalFieldOfView": 74
+  },
+  "background": {
+    "red": 0.1,
+    "green": 0.12,
+    "blue": 0.15
+  },
+  "lights": [
+    {
+      "kind": "ambient",
+      "color": {
+        "red": 0.86,
+        "green": 0.89,
+        "blue": 1
+      },
+      "intensity": 55,
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "attenuationStart": 0.2,
+      "attenuationEnd": 12,
+      "falloffExponent": 2
+    },
+    {
+      "kind": "omni",
+      "color": {
+        "red": 1,
+        "green": 0.88,
+        "blue": 0.74
+      },
+      "intensity": 120,
+      "position": {
+        "x": 0,
+        "y": 3,
+        "z": 3
+      },
+      "attenuationStart": 0.2,
+      "attenuationEnd": 12,
+      "falloffExponent": 2
+    },
+    {
+      "kind": "omni",
+      "color": {
+        "red": 0.74,
+        "green": 0.84,
+        "blue": 1
+      },
+      "intensity": 90,
+      "position": {
+        "x": 0,
+        "y": 3,
+        "z": -4
+      },
+      "attenuationStart": 0.2,
+      "attenuationEnd": 12,
+      "falloffExponent": 2
+    }
+  ]
+}

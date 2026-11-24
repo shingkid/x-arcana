@@ -1,0 +1,207 @@
+import Foundation
+
+enum SummonKind: String, Codable, CaseIterable {
+    case albert, alan, demon, patronus
+
+    var manaCost: Double {
+        switch self {
+        case .albert: return 30
+        case .alan: return 25
+        case .demon: return 40
+        case .patronus: return 30
+        }
+    }
+
+    var maxHealth: Int {
+        switch self {
+        case .albert: return 20
+        case .alan: return 15
+        case .demon: return 30
+        case .patronus: return 0
+        }
+    }
+
+    func canCoexist(with other: SummonKind) -> Bool {
+        (self == .albert && other == .alan) || (self == .alan && other == .albert)
+    }
+}
+
+enum SummonResult: Equatable {
+    case summoned, alreadyActive, insufficientMana, unavailable, gameOver
+}
+
+enum CombatRejection: String {
+    case gameOver, paused, notReady, cooldown, invalidTarget, insufficientMana
+}
+
+struct RunSnapshot: Codable, Equatable {
+    var health: Int = 100
+    var maxHealth: Int = 100
+    var mana: Double = 100
+    var maxMana: Double = 100
+    var level: Int = 1
+    var xp: Int = 0
+    var xpToNextLevel: Int = 40
+    var score: Int = 0
+    var kills: Int = 0
+    var wave: Int = 1
+    var bestScore: Int = 0
+    var bestWave: Int = 0
+    var isGameOver: Bool = false
+    var shieldRemaining: Double = 0
+    var shieldCooldownRemaining: Double = 0
+    var hasStarted: Bool = true
+    var countdownRemaining: Double = 0
+    var nyanRemaining: Double = 0
+}
+
+/// All times are simulation times, so pause and game over stop regeneration.
+final class SurvivalState {
+    static let nyanDuration: TimeInterval = 27
+    private(set) var snapshot: RunSnapshot
+    private var regenerationDelay: TimeInterval = 0
+    private let defaults: UserDefaults?
+
+    init(defaults: UserDefaults? = .standard, hasStarted: Bool = true) {
+        self.defaults = defaults
+        snapshot = RunSnapshot()
+        snapshot.hasStarted = hasStarted
+        snapshot.bestScore = defaults?.integer(forKey: "XArcana.bestScore") ?? 0
+        snapshot.bestWave = defaults?.integer(forKey: "XArcana.bestWave") ?? 0
+    }
+
+    func update(deltaTime: TimeInterval) {
+        guard snapshot.hasStarted, snapshot.countdownRemaining <= 0, !snapshot.isGameOver,
+            deltaTime.isFinite, deltaTime > 0
+        else { return }
+        snapshot.nyanRemaining = max(0, snapshot.nyanRemaining - deltaTime)
+        snapshot.shieldRemaining = max(0, snapshot.shieldRemaining - deltaTime)
+        snapshot.shieldCooldownRemaining = max(0, snapshot.shieldCooldownRemaining - deltaTime)
+        let regenerationTime = max(0, deltaTime - regenerationDelay)
+        regenerationDelay = max(0, regenerationDelay - deltaTime)
+        snapshot.mana = min(snapshot.maxMana, snapshot.mana + regenerationTime * 8)
+    }
+
+    func canSpend(_ cost: Double) -> Bool {
+        snapshot.hasStarted && snapshot.countdownRemaining <= 0 && !snapshot.isGameOver && cost >= 0
+            && snapshot.mana >= cost
+    }
+
+    @discardableResult
+    func spend(_ cost: Double) -> Bool {
+        guard canSpend(cost) else { return false }
+        snapshot.mana -= cost
+        if cost > 0 { regenerationDelay = 1 }
+        return true
+    }
+
+    @discardableResult
+    func beginCountdown() -> Bool {
+        guard !snapshot.hasStarted, !snapshot.isGameOver else { return false }
+        snapshot.hasStarted = true
+        snapshot.countdownRemaining = 3
+        return true
+    }
+
+    func advanceCountdown(deltaTime: TimeInterval) {
+        guard snapshot.hasStarted, !snapshot.isGameOver, deltaTime.isFinite, deltaTime > 0 else { return }
+        snapshot.countdownRemaining = max(0, snapshot.countdownRemaining - deltaTime)
+    }
+
+    @discardableResult
+    func activateNyan(manaCost: Double = 80) -> Bool {
+        guard snapshot.nyanRemaining <= 0, spend(manaCost) else { return false }
+        snapshot.nyanRemaining = Self.nyanDuration
+        return true
+    }
+
+    @discardableResult
+    func activateShield(manaCost: Double = 20) -> Bool {
+        guard snapshot.shieldCooldownRemaining <= 0, spend(manaCost) else { return false }
+        snapshot.shieldRemaining = 5
+        snapshot.shieldCooldownRemaining = 10
+        return true
+    }
+
+    func damage(_ amount: Int) {
+        guard !snapshot.isGameOver, amount > 0 else { return }
+        snapshot.health = max(0, snapshot.health - amount)
+        snapshot.isGameOver = snapshot.health == 0
+        if snapshot.isGameOver { snapshot.nyanRemaining = 0 }
+    }
+
+    func recordKill() {
+        guard !snapshot.isGameOver else { return }
+        snapshot.kills += 1
+        snapshot.score += 100
+        snapshot.xp += 10
+        while snapshot.xp >= snapshot.xpToNextLevel {
+            snapshot.xp -= snapshot.xpToNextLevel
+            snapshot.level += 1
+            snapshot.xpToNextLevel = 40 + 20 * (snapshot.level - 1)
+            snapshot.maxHealth += 10
+            snapshot.maxMana += 10
+            snapshot.health = min(snapshot.maxHealth, snapshot.health + 20)
+            snapshot.mana = snapshot.maxMana
+        }
+        saveRecords()
+    }
+
+    func clearWave() {
+        guard !snapshot.isGameOver else { return }
+        snapshot.score += 250
+        snapshot.bestWave = max(snapshot.bestWave, snapshot.wave)
+        saveRecords()
+    }
+
+    func nextWave() { snapshot.wave += 1 }
+
+    func restart(hasStarted: Bool = true) {
+        let bestScore = snapshot.bestScore
+        let bestWave = snapshot.bestWave
+        snapshot = RunSnapshot()
+        snapshot.hasStarted = hasStarted
+        snapshot.bestScore = bestScore
+        snapshot.bestWave = bestWave
+        regenerationDelay = 0
+    }
+
+    func clearRecords() {
+        snapshot.bestScore = 0
+        snapshot.bestWave = 0
+        defaults?.removeObject(forKey: "XArcana.bestScore")
+        defaults?.removeObject(forKey: "XArcana.bestWave")
+    }
+
+    private func saveRecords() {
+        snapshot.bestScore = max(snapshot.bestScore, snapshot.score)
+        defaults?.set(snapshot.bestScore, forKey: "XArcana.bestScore")
+        defaults?.set(snapshot.bestWave, forKey: "XArcana.bestWave")
+    }
+}
+
+// Older controller snapshots have no shield fields.
+extension RunSnapshot {
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        self.init()
+        health = try values.decodeIfPresent(Int.self, forKey: .health) ?? health
+        maxHealth = try values.decodeIfPresent(Int.self, forKey: .maxHealth) ?? maxHealth
+        mana = try values.decodeIfPresent(Double.self, forKey: .mana) ?? mana
+        maxMana = try values.decodeIfPresent(Double.self, forKey: .maxMana) ?? maxMana
+        level = try values.decodeIfPresent(Int.self, forKey: .level) ?? level
+        xp = try values.decodeIfPresent(Int.self, forKey: .xp) ?? xp
+        xpToNextLevel = try values.decodeIfPresent(Int.self, forKey: .xpToNextLevel) ?? xpToNextLevel
+        score = try values.decodeIfPresent(Int.self, forKey: .score) ?? score
+        kills = try values.decodeIfPresent(Int.self, forKey: .kills) ?? kills
+        wave = try values.decodeIfPresent(Int.self, forKey: .wave) ?? wave
+        bestScore = try values.decodeIfPresent(Int.self, forKey: .bestScore) ?? bestScore
+        bestWave = try values.decodeIfPresent(Int.self, forKey: .bestWave) ?? bestWave
+        isGameOver = try values.decodeIfPresent(Bool.self, forKey: .isGameOver) ?? isGameOver
+        shieldRemaining = try values.decodeIfPresent(Double.self, forKey: .shieldRemaining) ?? 0
+        shieldCooldownRemaining = try values.decodeIfPresent(Double.self, forKey: .shieldCooldownRemaining) ?? 0
+        hasStarted = try values.decodeIfPresent(Bool.self, forKey: .hasStarted) ?? true
+        countdownRemaining = try values.decodeIfPresent(Double.self, forKey: .countdownRemaining) ?? 0
+        nyanRemaining = try values.decodeIfPresent(Double.self, forKey: .nyanRemaining) ?? 0
+    }
+}

@@ -1,0 +1,54 @@
+{
+  "source_sha256": "7240a19a9c153ccfb2bdd1065f4ac96c89d790e613fb534c95a121fa80075031",
+  "license": "CC0-1.0",
+  "models": {
+    "neutral": {
+      "file": "Zombie.usdz",
+      "triangles": 52013,
+      "mesh_count": 5,
+      "bones": 17,
+      "clips": {
+        "walk": 1.1666666666666667,
+        "idle": 2.4166666666666665,
+        "swipe": 0.625,
+        "bite": 0.625
+      },
+      "weighted_vertices": 42971,
+      "head_and_face_unchanged": true,
+      "shoulder_width_factor": 0.96,
+      "hip_width_factor": 1.03
+    },
+    "male": {
+      "file": "ZombieMale.usdz",
+      "triangles": 52013,
+      "mesh_count": 5,
+      "bones": 17,
+      "clips": {
+        "walk": 1.1666666666666667,
+        "idle": 2.4166666666666665,
+        "swipe": 0.625,
+        "bite": 0.625
+      },
+      "weighted_vertices": 42971,
+      "head_and_face_unchanged": true,
+      "shoulder_width_factor": 1.04,
+      "hip_width_factor": 1.0
+    },
+    "female": {
+      "file": "ZombieFemale.usdz",
+      "triangles": 52013,
+      "mesh_count": 5,
+      "bones": 17,
+      "clips": {
+        "walk": 1.1666666666666667,
+        "idle": 2.4166666666666665,
+        "swipe": 0.625,
+        "bite": 0.625
+      },
+      "weighted_vertices": 42971,
+      "head_and_face_unchanged": true,
+      "shoulder_width_factor": 0.8,
+      "hip_width_factor": 1.13
+    }
+  }
+}

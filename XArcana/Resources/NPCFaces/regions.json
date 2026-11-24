@@ -1,0 +1,1892 @@
+[
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "aditya",
+    "image": "aditya.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Aditya",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "adrian",
+    "image": "adrian.jpg",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Adrian",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "alan",
+    "image": "alan.jpg",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Alan",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "albert",
+    "image": "albert.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Albert",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "amber",
+    "image": "amber.jpg",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Amber",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "bjorn",
+    "image": "bjorn.jpg",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Bjorn",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "cassandra",
+    "image": "cassandra.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Cassandra",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "clara",
+    "image": "clara.jpg",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Clara",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "dan",
+    "image": "dan.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Dan",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "darren",
+    "image": "darren.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Darren",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "darryl",
+    "image": "darryl.jpg",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Darryl",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "david",
+    "image": "david.jpg",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "David",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "edwin",
+    "image": "edwin.jpg",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Edwin",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "eugene",
+    "image": "eugene.jpg",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Eugene",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "hiroshi",
+    "image": "hiroshi.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Hiroshi",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "ivan",
+    "image": "ivan.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Ivan",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "jack",
+    "image": "jack.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Jack",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "jane",
+    "image": "jane.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Jane",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "jason",
+    "image": "jason.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Jason",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "jeph",
+    "image": "jeph.jpg",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Jeph",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "jia-hao",
+    "image": "jia-hao.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Jia Hao",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "jia-yi",
+    "image": "jia-yi.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Jia Yi",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "job",
+    "image": "job.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Job",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "jon",
+    "image": "jon.jpg",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Jon",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "kai-feng",
+    "image": "kai-feng.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Kai Feng",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "kye-min",
+    "image": "kye-min.jpg",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Kye Min",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "leonard",
+    "image": "leonard.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Leonard",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "lucas",
+    "image": "lucas.jpg",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Lucas",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "peng-seng",
+    "image": "peng-seng.jpg",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Peng Seng",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "raymond",
+    "image": "raymond.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Raymond",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "royce",
+    "image": "royce.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Royce",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "shirley",
+    "image": "shirley.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Shirley",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "shubham",
+    "image": "shubham.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Shubham",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "stefan",
+    "image": "stefan.jpg",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Stefan",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "sylvain",
+    "image": "sylvain.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Sylvain",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "trista",
+    "image": "trista.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Trista",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "ugo",
+    "image": "ugo.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Ugo",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "william",
+    "image": "william.png",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "William",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "xinyi",
+    "image": "xinyi.jpg",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Xinyi",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "yi-chen",
+    "image": "yi-chen.jpg",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Yi Chen",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "yik-sheng",
+    "image": "yik-sheng.jpg",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Yik Sheng",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  },
+  {
+    "coordinateOrigin": "bottom-left",
+    "faceDetected": false,
+    "faceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "id": "zoey",
+    "image": "zoey.jpg",
+    "imageSubdirectory": "NPCPortraits",
+    "leftEye": {
+      "x": 0.37109375,
+      "y": 0.59765625
+    },
+    "mouth": {
+      "x": 0.5,
+      "y": 0.3359375
+    },
+    "name": "Zoey",
+    "nose": {
+      "x": 0.5,
+      "y": 0.453125
+    },
+    "provenance": "procedural-public-placeholder-v1",
+    "rawFaceRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    },
+    "rightEye": {
+      "x": 0.62890625,
+      "y": 0.59765625
+    },
+    "sourceHeight": 256,
+    "sourceWidth": 256,
+    "textureRect": {
+      "height": 0.78125,
+      "width": 0.671875,
+      "x": 0.1640625,
+      "y": 0.109375
+    }
+  }
+]

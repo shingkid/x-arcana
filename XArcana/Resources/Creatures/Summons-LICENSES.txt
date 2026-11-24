@@ -1,0 +1,28 @@
+DEMON
+"Demon" by Grefuntor / Atmostatic, 2013.
+Source: https://opengameart.org/content/demon
+Author: http://atmostatic.blogspot.com
+License: Creative Commons Attribution 3.0 Unported (CC BY 3.0).
+License URL: https://creativecommons.org/licenses/by/3.0/
+Legal terms: https://creativecommons.org/licenses/by/3.0/legalcode
+
+Adapted for X Arcana: lowered-arm pose, subdivision and mesh optimization,
+oxblood texture grading, physically based material, and USDZ conversion.
+Retained weighted skeleton; authored idle, walk, claw-combo, slam, and breath clips.
+Original artist attribution and license must remain with redistributed assets.
+No endorsement by the original artist is implied.
+
+STAG / PATRONUS
+"Old Deer Male" by CDmir, with collaborator TinyWorlds, 2015.
+Source: https://opengameart.org/content/old-deer-male
+License: CC0 1.0 Universal public domain dedication.
+License URL: https://creativecommons.org/publicdomain/zero/1.0/
+Legal terms: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+Adapted for X Arcana: anatomical surface refinement, mesh optimization,
+silver-blue texture grading, USDZ conversion, and runtime spirit shading.
+Retained weighted skeleton and reused the original Run and Idle actions.
+The source model was created for the Kelgar project.
+
+Retrieved and adapted 24 November 2026.
+All source files used here are retained in Creature Sources/Summons.

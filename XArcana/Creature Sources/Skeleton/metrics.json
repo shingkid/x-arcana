@@ -1,0 +1,21 @@
+{
+  "triangles": 26826,
+  "vertices": 28196,
+  "joints": 55,
+  "texture_sizes": {
+    "skeleton_color": [
+      2048,
+      2048
+    ],
+    "skeleton_normal0": [
+      1024,
+      1024
+    ],
+    "skeleton_rough0": [
+      256,
+      256
+    ]
+  },
+  "source": "https://tevy.dev/models/skeleton/v1/lod0.glb",
+  "license": "CC0-1.0"
+}

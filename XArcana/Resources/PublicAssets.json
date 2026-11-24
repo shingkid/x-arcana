@@ -1,0 +1,105 @@
+{
+  "generated": {
+    "Resources/Fantasy/AlanCharacter.rig.json": "add4e173beefa8196d90faa6a224a6d455b434ef7b8ac8e42ece5ea922145f89",
+    "Resources/Fantasy/AlanCharacter.usdz": "529b793cb3d8a7c9ec608b00729abd8ff5ac0e3e8d88143ae21f9c3b79672b47",
+    "Resources/Fantasy/PortraitCharacter.rig.json": "2f68a1e01fdd4841f0c9016d6ec63a3d33ad26f0d278266e337fae7688612e63",
+    "Resources/Fantasy/PortraitCharacter.usdz": "3b107cb69220b2d8bcef8851a560aa43c506de22db433819bd4477d3d2032600",
+    "Resources/Fantasy/alan.jpg": "313973763b65362bf29920ca300bb3a940df64c060e8eb6ae3630667410534e2",
+    "Resources/Fantasy/albert.png": "2b0fc2c8272dad496d4679c87f530c17b8fc1b5ba7505008821c99984255203f",
+    "Resources/NPCFaces/regions.json": "0507182bca1d2b90af437e5cfa6c355847ecd22b9bcc7d8ee0504c6dcd17d596",
+    "Resources/NPCPortraits/aditya.png": "ef5236973906b3cdd36508c904929d6c3e4a71e0eafdeff38d795dc66075c6d8",
+    "Resources/NPCPortraits/adrian.jpg": "c639cda7ff6c31aa9e10e7e9ebaff609da30a8a8c8f25142da835d56e423ba65",
+    "Resources/NPCPortraits/alan.jpg": "313973763b65362bf29920ca300bb3a940df64c060e8eb6ae3630667410534e2",
+    "Resources/NPCPortraits/albert.png": "2b0fc2c8272dad496d4679c87f530c17b8fc1b5ba7505008821c99984255203f",
+    "Resources/NPCPortraits/amber.jpg": "152e22ab6a219b86023522a34700b6a12da8bfa4f74f472852557a9dad99358d",
+    "Resources/NPCPortraits/bjorn.jpg": "357ada61a686cda95b5d2ecf3ed579f426ae06d70cf82d2dd632d50929845e85",
+    "Resources/NPCPortraits/body-styles.json": "a4be76f581c44157911b4bf281836eb21622a9209c0e5c131b137c2a879bacf6",
+    "Resources/NPCPortraits/cassandra.png": "4f57b9075379c79e73feaad090249d0b1ed8a513ee54cc2d7c71b27fc14a2929",
+    "Resources/NPCPortraits/clara.jpg": "81bd730f3014e9f9357a1cfa482361a0ddf9460a21213feafa9ec76bc9c919a0",
+    "Resources/NPCPortraits/dan.png": "4bbdff3410c4ed71c8b9001475508a153c912e59921babdd751b344c6a1f6358",
+    "Resources/NPCPortraits/darren.png": "35892b24bb5e639b45cacc6ed7616c143c9384f710bbf69a24dcd35730582058",
+    "Resources/NPCPortraits/darryl.jpg": "971c47ddbc487ab68d1828f9a15a644dfaf5e053e672d7b227b69ad247acb5da",
+    "Resources/NPCPortraits/david.jpg": "5413aa4b909c9ad3909f9e6160a53ce7adc5952b299209671ec3979e67884cc5",
+    "Resources/NPCPortraits/edwin.jpg": "ec5fed9476ec0c96184f8720f5fc3347a0c8154724e79b0df40641fbcc7986aa",
+    "Resources/NPCPortraits/eugene.jpg": "fbf2a15f51f88f1f8d095a8f255a36b154016c36a8807bb3f0856d20fcba6194",
+    "Resources/NPCPortraits/hiroshi.png": "959d4a484ed2cdb10d7abc7899b73d8c2c0570522e987c8dbde06245cfa000cb",
+    "Resources/NPCPortraits/ivan.png": "8dc6365b3c2686033f37259c81d1cacc3c259489200d93deef3a82c8fd438e40",
+    "Resources/NPCPortraits/jack.png": "018b437566f0c949f104a2690c8bdbf78ab395341173c30678e03120294541fd",
+    "Resources/NPCPortraits/jane.png": "415cf60f138f2fb7295d110ad356e10de79d50378cacb5fbf7ea9806df3d9485",
+    "Resources/NPCPortraits/jason.png": "5ababd25aa0de4203c26de04b4b2e5791a23d1cd2a68263355ff9e1695518b0c",
+    "Resources/NPCPortraits/jeph.jpg": "7ced66e722ecfd529011f5c0c87708f5ee1fb62aa2ecc819df674018f284841c",
+    "Resources/NPCPortraits/jia-hao.png": "1d13ccb79d695053fc475c1a0bbb9d248f2ccaaae9a9a763f1dbc407f7313dcf",
+    "Resources/NPCPortraits/jia-yi.png": "772e30e6e4a7ce5dccd8cfc6d7cd028032b80aee99e4b8361a0bee8b524f40fc",
+    "Resources/NPCPortraits/job.png": "7adf2794c830c0bf2dabdb176f4077625c87dffbc84672bc71b9d43ebab07ba3",
+    "Resources/NPCPortraits/jon.jpg": "e7122a416e49f9ecf8719bccbafdaf0b10cc719c383e3213926522fc102e7fd1",
+    "Resources/NPCPortraits/kai-feng.png": "4b4c80405b9b8733fac89369c174e69529bc6247331c56f70068a1f2cef8b9f0",
+    "Resources/NPCPortraits/kye-min.jpg": "d329b3e9a9579bfafc86fbc49dc961eb9acb3f9cb2c348b8caf2c85d1dc57054",
+    "Resources/NPCPortraits/leonard.png": "fbf93d9a87d9294f851a7fe6b181eafbf21d62b43b66232cf194f02ba43fbad3",
+    "Resources/NPCPortraits/lucas.jpg": "8897bf7102f5d3b31a9944835fb2c181bd703763a7b77d77f3feb18bd4912a12",
+    "Resources/NPCPortraits/peng-seng.jpg": "78ace6cc64128342820f4019b210962f6cc2ca18458655e8572e80accc6800a0",
+    "Resources/NPCPortraits/raymond.png": "ca05c38e3823dcad1a6f080860fb76b856392a5c237f01421e843c18ff1a6ce4",
+    "Resources/NPCPortraits/roster.json": "0cefeff7b31c4cc911065e120b01461be845fe8d4defcbb2837c8c80663827df",
+    "Resources/NPCPortraits/royce.png": "1365f5fcb4ffb1a49fee2f577c00aeaaa9cf55cb857c474cc26a232726966049",
+    "Resources/NPCPortraits/shirley.png": "dcd6732cbaae516fd6830d23fe30926c431e08791aa9ed0f8dce1ada84101f37",
+    "Resources/NPCPortraits/shubham.png": "e0eb7765f066bb6893680a28920e67d83ed87f9faca5f1dad018e0814c964755",
+    "Resources/NPCPortraits/stefan.jpg": "fc531a4d207087953159251a6226b7079ddab077aafaaa8f20f339aaa7c746e0",
+    "Resources/NPCPortraits/sylvain.png": "937d67cb9ccc7541e15920028b4054d8c4f5be96a001a30c5c21652216b42e91",
+    "Resources/NPCPortraits/trista.png": "5e536f69db9190f20bf7ab0ce78c9def2cf8e8aa2a077fe5396c48fe9ab5530b",
+    "Resources/NPCPortraits/ugo.png": "b0b1f7ff0775f94595424143350ceadcf9bf843af098f18bce14fd3f907eba74",
+    "Resources/NPCPortraits/william.png": "e2ea3823989cddbc78badf07441339297eca7cc209cfed0641efc6535f25b939",
+    "Resources/NPCPortraits/xinyi.jpg": "1ae7dfff27532928173804614506d03443ed1d9c2ae35756e5c76247ff5ad295",
+    "Resources/NPCPortraits/yi-chen.jpg": "870812195c302fdb2c77bffd6880ea98c50501ef2052aac35dac6934082711e4",
+    "Resources/NPCPortraits/yik-sheng.jpg": "4db7b137c718ba55b35b05ed972e523e862ea3dff3075ead4dca47fcf7e8c807",
+    "Resources/NPCPortraits/zoey.jpg": "4aeb4a3b9a2df6f1238e24584115091ceff8f9e3eb1d9a707bcc0a79ad62fca2"
+  },
+  "generator": "Tools/PreparePublicAssets.py",
+  "license": "CC0-1.0",
+  "provenance": "Original procedural robot icons and geometric bodies; no photographs or imported prototype geometry.",
+  "retainedThirdParty": [
+    {
+      "attribution": "Fantasy Sources/Attribution.md",
+      "license": "CC0-1.0",
+      "paths": [
+        "Resources/Fantasy/FantasyRoom.usdz",
+        "Fantasy Sources/FantasyRoom.blend",
+        "Fantasy Sources/Kenney-Room-Large.glb",
+        "Fantasy Sources/Textures"
+      ]
+    },
+    {
+      "attribution": "Creature Sources/Skeleton/README.md",
+      "license": "CC0-1.0",
+      "paths": [
+        "Resources/Creatures/Skeleton.usdz",
+        "Creature Sources/Skeleton"
+      ]
+    },
+    {
+      "attribution": "Creature Sources/Zombie/README.md",
+      "license": "CC0-1.0",
+      "paths": [
+        "Resources/Creatures/Zombie.usdz",
+        "Resources/Creatures/ZombieMale.usdz",
+        "Resources/Creatures/ZombieFemale.usdz",
+        "Creature Sources/Zombie"
+      ]
+    },
+    {
+      "attribution": "Resources/Creatures/Summons-LICENSES.txt",
+      "license": "CC-BY-3.0",
+      "paths": [
+        "Resources/Creatures/Demon.usdz",
+        "Creature Sources/Summons/Demon.blend"
+      ]
+    },
+    {
+      "attribution": "Resources/Creatures/Summons-LICENSES.txt",
+      "license": "CC0-1.0",
+      "paths": [
+        "Resources/Creatures/Stag.usdz",
+        "Creature Sources/Summons/Stag.blend"
+      ]
+    }
+  ],
+  "schemaVersion": 1
+}

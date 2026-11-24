@@ -1,0 +1,212 @@
+[
+  {
+    "id": "aditya",
+    "name": "Aditya",
+    "image": "aditya.png"
+  },
+  {
+    "id": "adrian",
+    "name": "Adrian",
+    "image": "adrian.jpg"
+  },
+  {
+    "id": "alan",
+    "name": "Alan",
+    "image": "alan.jpg"
+  },
+  {
+    "id": "albert",
+    "name": "Albert",
+    "image": "albert.png"
+  },
+  {
+    "id": "amber",
+    "name": "Amber",
+    "image": "amber.jpg"
+  },
+  {
+    "id": "bjorn",
+    "name": "Bjorn",
+    "image": "bjorn.jpg"
+  },
+  {
+    "id": "cassandra",
+    "name": "Cassandra",
+    "image": "cassandra.png"
+  },
+  {
+    "id": "clara",
+    "name": "Clara",
+    "image": "clara.jpg"
+  },
+  {
+    "id": "dan",
+    "name": "Dan",
+    "image": "dan.png"
+  },
+  {
+    "id": "darren",
+    "name": "Darren",
+    "image": "darren.png"
+  },
+  {
+    "id": "darryl",
+    "name": "Darryl",
+    "image": "darryl.jpg"
+  },
+  {
+    "id": "david",
+    "name": "David",
+    "image": "david.jpg"
+  },
+  {
+    "id": "edwin",
+    "name": "Edwin",
+    "image": "edwin.jpg"
+  },
+  {
+    "id": "eugene",
+    "name": "Eugene",
+    "image": "eugene.jpg"
+  },
+  {
+    "id": "hiroshi",
+    "name": "Hiroshi",
+    "image": "hiroshi.png"
+  },
+  {
+    "id": "ivan",
+    "name": "Ivan",
+    "image": "ivan.png"
+  },
+  {
+    "id": "jack",
+    "name": "Jack",
+    "image": "jack.png"
+  },
+  {
+    "id": "jane",
+    "name": "Jane",
+    "image": "jane.png"
+  },
+  {
+    "id": "jason",
+    "name": "Jason",
+    "image": "jason.png"
+  },
+  {
+    "id": "jeph",
+    "name": "Jeph",
+    "image": "jeph.jpg"
+  },
+  {
+    "id": "jia-hao",
+    "name": "Jia Hao",
+    "image": "jia-hao.png"
+  },
+  {
+    "id": "jia-yi",
+    "name": "Jia Yi",
+    "image": "jia-yi.png"
+  },
+  {
+    "id": "job",
+    "name": "Job",
+    "image": "job.png"
+  },
+  {
+    "id": "jon",
+    "name": "Jon",
+    "image": "jon.jpg"
+  },
+  {
+    "id": "kai-feng",
+    "name": "Kai Feng",
+    "image": "kai-feng.png"
+  },
+  {
+    "id": "kye-min",
+    "name": "Kye Min",
+    "image": "kye-min.jpg"
+  },
+  {
+    "id": "leonard",
+    "name": "Leonard",
+    "image": "leonard.png"
+  },
+  {
+    "id": "lucas",
+    "name": "Lucas",
+    "image": "lucas.jpg"
+  },
+  {
+    "id": "peng-seng",
+    "name": "Peng Seng",
+    "image": "peng-seng.jpg"
+  },
+  {
+    "id": "raymond",
+    "name": "Raymond",
+    "image": "raymond.png"
+  },
+  {
+    "id": "royce",
+    "name": "Royce",
+    "image": "royce.png"
+  },
+  {
+    "id": "shirley",
+    "name": "Shirley",
+    "image": "shirley.png"
+  },
+  {
+    "id": "shubham",
+    "name": "Shubham",
+    "image": "shubham.png"
+  },
+  {
+    "id": "stefan",
+    "name": "Stefan",
+    "image": "stefan.jpg"
+  },
+  {
+    "id": "sylvain",
+    "name": "Sylvain",
+    "image": "sylvain.png"
+  },
+  {
+    "id": "trista",
+    "name": "Trista",
+    "image": "trista.png"
+  },
+  {
+    "id": "ugo",
+    "name": "Ugo",
+    "image": "ugo.png"
+  },
+  {
+    "id": "william",
+    "name": "William",
+    "image": "william.png"
+  },
+  {
+    "id": "xinyi",
+    "name": "Xinyi",
+    "image": "xinyi.jpg"
+  },
+  {
+    "id": "yi-chen",
+    "name": "Yi Chen",
+    "image": "yi-chen.jpg"
+  },
+  {
+    "id": "yik-sheng",
+    "name": "Yik Sheng",
+    "image": "yik-sheng.jpg"
+  },
+  {
+    "id": "zoey",
+    "name": "Zoey",
+    "image": "zoey.jpg"
+  }
+]

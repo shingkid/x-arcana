@@ -1,0 +1,223 @@
+<!DOCTYPE html><html lang=ja><head><meta charset=utf-8><meta http-equiv=X-UA-Compatible content="IE=edge"><meta name=apple-mobile-web-app-capable content=yes><meta name=viewport content="width=device-width, initial-scale=1.0, user-scalable=1"><meta name=description content="daniwell official website. 自作の音楽やコンテンツ、アプリなどを公開しています。"><title>AIDN | ABOUT</title><meta name=twitter:card content=summary_large_image><meta name=twitter:image content=https://aidn.jp/shared/img/og/aidn_about.png><meta name=twitter:site content=@daniwell_aidn><meta property=og:locale content=ja_JP><meta property=og:type content=website><meta property=og:image content=https://aidn.jp/shared/img/og/aidn_about.png><meta property=og:title content="AIDN | ABOUT"><meta property=og:description content="daniwell official website. 自作の音楽やコンテンツ、アプリなどを公開しています。"><meta property=fb:app_id content=260132667518211><link rel=apple-touch-icon href=../apple-touch-icon.png><link rel="shortcut icon" href=../shared/icon/favicon.ico><link rel=alternate media=handheld href="https://aidn.jp/about/"><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500&family=Poppins:wght@500&display=swap" rel=stylesheet><link charset=UTF-8 href=../shared/main/css/main.css?12 rel=stylesheet><style>html, body {
+    letter-spacing: calc(0.2rem + 0.5vmin);
+}
+#menu {
+    letter-spacing: calc(.3rem + .6vmin);
+}
+
+
+#about {
+    margin: 4vmin 4.4vmin;
+    
+    line-height: 1.5;
+    
+    margin-bottom: 0;
+    padding-bottom: 4vmin;
+}
+
+#about h1 {
+    font-size: calc(2rem + 3vmin);
+    margin-bottom: calc(4vmin + 10px);
+}
+#about h2 {
+    font-size: calc(0.7rem + 0.7vmin);
+    margin-bottom: calc(1.0vmin + 10px);
+}
+#about h3 {
+    font-size: calc(0.7rem + 0.7vmin);
+    margin-bottom: calc(8vmin + 10px);
+    letter-spacing: calc(0.2rem + 0.2vmin);
+}
+#about h3 a.nyan {
+    border-bottom: 2px solid #000;
+    padding-bottom: 0.9vmin;
+}
+#about h3 a:last-child, #about h3 a:last-child img {
+    vertical-align: middle;
+}
+
+#about .text {
+    font-size: calc(0.6rem + 0.8vmin);
+    margin-bottom: calc(30px + 3vmin);
+}
+#about .mail {
+    font-size: calc(0.9rem + 1.0vmin);
+    margin-bottom: calc(50px + 5vmin);
+}
+#about .mail a {
+    border-bottom: 2px solid #000;
+    padding-bottom: 1.2vmin;
+}
+
+
+
+#about #kiyaku {
+    margin-bottom: calc(50px + 5vmin);
+    
+    background: #ffffffcc;
+    padding: calc(12px + 4vmin) calc(5px + 4vmin);
+}
+
+#about #kiyaku h4 {
+    font-size: calc(0.8rem + 0.8vmin);
+    letter-spacing: 0.15rem;
+    
+    margin-bottom: calc(18px + 1.8vmin);
+}
+
+#about ul {
+    margin-left: calc(10px + 1.0vmin);
+}
+#about ul.spa {
+    margin-bottom: calc(25px + 2.5vmin);
+}
+#about ul li {
+    list-style: disc;
+    font-size: calc(0.6rem + 0.6vmin);
+    margin-bottom: calc(6px + 0.6vmin);
+}
+#about ul li a {
+    border-bottom: 2px solid #000;
+    padding-bottom: 0.1vmin;
+}
+#about .text,
+#about ul li {
+    letter-spacing: calc(0.2rem + 0.2vmin);
+    line-height: 1.9;
+}
+#about #kiyaku p.sub {
+    margin: 0 calc(3px + 0.4vmin);
+    margin-top: calc(32px + 3.2vmin);
+
+    font-size: calc(0.55rem + 0.6vmin);
+    letter-spacing: calc(0.2rem + 0.2vmin);
+    line-height: 1.8;
+}
+#about #kiyaku p.sub a {
+    border-bottom: 2px solid #000;
+    padding-bottom: 0.1vmin;
+}
+
+
+
+
+#about .social {
+    margin-bottom: calc(15px + 1.5vmin);
+}
+#about .social p svg {
+    width: calc(25px + 2.5vmin);
+}
+#about .social p.icons a {
+    margin-right: calc(15px + 1.5vmin);
+}
+
+#about .account {
+    margin-bottom: calc(40px + 4vmin);
+}
+#about .account p {
+    font-size: calc(1.0rem + 1.0vmin);
+    margin-bottom: calc(10px + 1.0vmin);
+}
+#about .account .spa {
+    margin-bottom: calc(20px + 2.0vmin);
+}
+#about .account .sub {
+    font-size: calc(0.9rem + 0.9vmin);
+}
+
+
+#about .social p.icons a {
+    display: inline-flex;
+}
+#about h3 a { padding-top: 0.9vmin; }
+#about .mail a { padding-top: 1vmin; }
+
+#about a { position: relative; }
+#about a:hover { opacity: 1; }
+
+#about a::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 0;
+    height: 100%;
+    background: #000;
+    z-index: 0;
+    transition: width .16s;
+}
+#about a:hover::before { width: 100%; }
+
+
+video {
+    position: fixed;
+    top: 50vh; left: 50vw;
+    width: 100vw; height: 120vh;
+    transform: translate(-50%, -50%);
+    object-fit: cover;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+}
+video.loaded {
+    opacity: 0.20;
+}
+
+.overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 110vh;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.4) 40%, transparent 40%);
+    background-size: 3px 3px;
+    z-index: -1; 
+}
+
+
+
+.dark #about h1,
+.dark #about h3,
+.dark #about h4,
+.dark #about p,
+.dark #about li,
+.dark #about a {
+    color: #eee;
+    border-color: #eee !important;
+}
+.dark #about svg {
+    fill: #eee;
+}
+.dark #about a::before {
+    background-color: #eee;
+}
+.dark #about #kiyaku {
+    background-color: #111418cc;
+}
+
+.dark .overlay {
+  background-image: radial-gradient(rgba(0, 0, 0, 0.4) 40%, transparent 40%); 
+}
+
+
+.dark #about #google_translate_element a {
+	color: #000 !important;
+}
+.dark #about #google_translate_element a::before {
+    display: none;
+}</style><script src=https://cdn.jsdelivr.net/npm/jquery@2.2.4/dist/jquery.min.js defer></script><script charset=UTF-8 src=../shared/js/common.js?12 defer></script><script>function _init ()
+{
+    var address = ["daniwell", "aidn.jp"].join("@");
+    var em = $(".mail a");
+    em.text(address);
+    em.on("click", function (e) {
+        e.preventDefault();
+        location.href = "mailto:" + address;
+    });
+}
+function _check () {
+    if (typeof jQuery == "undefined" || typeof aidn == "undefined") setTimeout(_check, 10);
+    else $(_init);
+}
+_check();</script><script>(function(){ const n = parseInt(localStorage.getItem("/darkmode")); if ((isNaN(n) && window.matchMedia('(prefers-color-scheme: dark)').matches) || n == 1) document.documentElement.classList.add('dark'); })();</script><body id=aidnx class=aidnsub><svg xmlns=http://www.w3.org/2000/svg xmlns:xlink=http://www.w3.org/1999/xlink style="display: none"><symbol id=svg_tw viewbox="0 0 1200 1227"><path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.137 519.284H714.163ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.854V687.828Z"></symbol><symbol id=svg_youtube viewbox="0 0 159 110"><path d="M154,17.5c-1.82-6.73-7.07-12-13.8-13.8c-9.04-3.49-96.6-5.2-122,0.1c-6.73,1.82-12,7.07-13.8,13.8 C0.32,35.5,0.01,74.2,4.5,92.5c1.82,6.73,7.07,12,13.8,13.8c17.9,4.12,103,4.7,122,0c6.729-1.819,12-7.069,13.8-13.8 C158.45,73,158.76,36.7,154,17.5z M64.2,78.4V31.6L105,55L64.2,78.4z"></symbol><symbol id=svg_niconico viewbox="-2 -2 28 28"><path d="M.4787 7.534v12.1279A2.0213 2.0213 0 0 0 2.5 21.6832h2.3888l1.323 2.0948a.4778.4778 0 0 0 .4043.2205.4778.4778 0 0 0 .441-.2205l1.323-2.0948h6.9828l1.323 2.0948a.4778.4778 0 0 0 .441.2205c.1838 0 .3308-.0735.4043-.2205l1.323-2.0948h2.6462a2.0213 2.0213 0 0 0 2.0213-2.0213V7.5339a2.0213 2.0213 0 0 0-2.0213-1.9845h-7.681l4.4468-4.4469L17.1637 0l-5.1452 5.1452L6.8 0 5.6973 1.1025l4.4102 4.4102H2.5367a2.0213 2.0213 0 0 0-2.058 2.058z"></symbol><symbol id=svg_light viewbox="0 -960 960 960"><path d="M339.72-148.34q-65.73-28.34-114.36-76.92-48.63-48.58-76.99-114.26Q120-405.19 120-479.87q0-74.67 28.34-140.41 28.34-65.73 76.92-114.36 48.58-48.63 114.26-76.99Q405.19-840 479.87-840q74.67 0 140.41 28.34 65.73 28.34 114.36 76.92 48.63 48.58 76.99 114.26Q840-554.81 840-480.13q0 74.67-28.34 140.41-28.34 65.73-76.92 114.36-48.58 48.63-114.26 76.99Q554.81-120 480.13-120q-74.67 0-140.41-28.34ZM500-160.69q123.62-8.08 211.81-98.35T800-480q0-130.69-87.42-220.19-87.43-89.5-212.58-99.12v638.62Z"></symbol></svg><video id=bg_video autoplay="" muted loop="" playsinline="" disablepictureinpicture=""><source src=https://daniwell.com/shared/video/kurukuru.webm type=video/webm></video><div class=overlay></div><div id=about><div id=google_translate_element style=margin-bottom:1vmin></div><h1>daniwell</h1><div class=social><p class="spa icons"><a href=https://www.youtube.com/user/daniwellaidn target=_blank><svg viewbox="0 0 24 24"><use xlink:href=#svg_youtube></use></svg></a><a href="https://www.nicovideo.jp/user/989911/mylist/4009728?sortKey=viewCount&sortOrder=desc" target=_blank class=nico><svg viewbox="0 0 24 24"><use xlink:href=#svg_niconico></use></svg></a><a href=https://twitter.com/daniwell_aidn target=_blank><svg viewbox="0 0 24 24" style="transform: scale(0.75); margin-left: calc(-3px - 0.3vmin)"><use xlink:href=#svg_tw></use></svg></a></p></div><h3><a href="https://www.youtube.com/watch?v=QH2-TGUlwu4" target=_blank class=nyan>Nyan Cat</a> Song Creator</h3><p class=text>作詞・作曲・デザイン・イラスト・モデリング・プログラミング・映像制作など全般を行っております。<br><br>ウェブ／インスタレーション制作会社を経て現在はフリーランスに。<br>お仕事のご依頼やお問い合わせなど、下記までどうぞお気軽にご連絡ください。</p><p class=mail><a href="">&nbsp;</a></p><div id=kiyaku><h4>楽曲の利用について</h4><ul class=spa><li>当サイトで公開している<a href="../sound/" target=_blank>楽曲</a>は非営利に限り、二次創作として動画・配信・ゲーム・ウェブ・SNSなどでご自由にお使いいただいて構いません（使用に際して特にご連絡の必要はございませんが、曲名／アーティスト名の明記をお願いします）。</li><li>個人でのご利用において、YouTubeの広告収入及びニコニコ動画のクリエイター奨励プログラムについては営利目的に該当しないものとします。また、それ以外においても直接的に収益を得ていなければ営利目的であってもお使いいただけます（例えば自作品から収益を得ているが、私の楽曲を用いた作品からは収益を得ずにお使いいただく場合など）。</li><li>一部の楽曲はコンテンツIDの登録をしているため、YouTube上で自動的に広告が挿入されることがありますが、ご使用いただく分には問題ございません。</li><li>営利目的でのご利用は、株式会社EMP管理楽曲については<a href="https://exittunes.com/guideline/" target=_blank>コチラ</a>まで、それ以外については上記アドレスまでお問い合わせください（管理楽曲かどうかは<a href="https://www2.jasrac.or.jp/eJwid/" target=_blank>JASRAC</a>及び<a href="https://search.nex-tone.co.jp/" target=_blank>NexTone</a>の作品データベースより検索してご確認ください）。</li></ul><h4>コンテンツの利用について</h4><ul class=spa><li>当サイトで公開している<a href="../contents/" target=_blank>コンテンツ</a>及びコンテンツの生成物（例：<a href="../jingle/" target=_blank>自動作曲ちゃん</a>で生成された楽曲など）は、営利／非営利問わず、二次創作として動画・配信・ゲーム・ウェブ・SNSなどでご自由にお使いいただいて構いません（使用に際して特にご連絡の必要はございませんが、コンテンツ名／URLの明記をお願いします）。</li><li>営利目的において、法人としてご使用される場合は念のため一度お問い合わせください。ただし、宣伝目的などであっても、単にSNS上などでシェアされる分には特にご連絡いただく必要はございません（例：<a href="../jingle/" target=_blank>自動作曲ちゃん</a>で自社商品名を入力して作曲したものをポストする）。</li><li>ご利用になりたいコンテンツ内で利用について明記されている場合や、私の著作物でないもの（初音ミクのキャラクターなど）が含まれる場合はそちらの規約を優先してください。</li><li>コンテンツの生成物をそのまま販売するような行為はおやめください。</li></ul></div><div class=account><p class=sub><a href=https://karent.jp/artist/pp000298 target=_blank>KARENT</a></p><p class="sub spa"><a href=https://www.tunecore.co.jp/artists/daniwell target=_blank>TUNECORE</a></p><p class=sub><a href=https://piapro.jp/daniwell target=_blank>PIAPRO</a></p><p class=sub><a href="https://www.pixiv.net/member.php?id=2262804" target=_blank>PIXIV</a></p><p class=sub><a href="https://soundcloud.com/daniwell_aidn/" target=_blank>SOUND CLOUD</a></p><p class=sub><a href="https://oyamada-chan.com/" target=_blank>OYAMADA-CHAN</a></p></div></div><div id=bt_menu><img src=../shared/main/img/menu.svg></div><div id=menu><h1><a href="../">AIDN</a></h1><h2>daniwell official website</h2><p><a href="../contents/">CONTENTS</a></p><p><a href="../sound/">SOUND</a></p><p class=none>ABOUT</p><p class=spa><a href="../daniwell/"><img src=../shared/main/img/disco.svg><span>DISCOGRAPHY</span></a></p></div><div id=mode><svg viewbox="0 0 24 24"><use xlink:href=#svg_light></use></svg></div><script>window.addEventListener('DOMContentLoaded', () => {
+    const video = document.getElementById('bg_video');
+    video.addEventListener('playing', () => { video.classList.add('loaded'); });
+    document.addEventListener("visibilitychange", () => { if (! document.hidden && video.paused) { video.load(); video.play(); } });
+});</script><script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092" integrity="sha512-UKNk8GbxkABxKcXYuLkO16EleLGUkcvJWtpSNmExE0Too3ZaFAxTscNWEc1OdAv5/BikHawapSCaiD2XCmp+Bw==" data-cf-beacon='{"version":"2024.11.0","token":"711c8fb324aa474e8b64040afab9b97f","r":1,"spa":2}' crossorigin="anonymous"></script>

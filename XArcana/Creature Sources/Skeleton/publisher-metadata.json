@@ -1,0 +1,105 @@
+{
+  "schema": 1,
+  "slug": "skeleton",
+  "name": "Walking Skeleton",
+  "category": "seasonal",
+  "tags": [
+    "halloween",
+    "skeleton",
+    "character",
+    "rigged",
+    "animated",
+    "bones",
+    "undead",
+    "spooky"
+  ],
+  "description": "Walking human skeleton, 1.75 m tall, in aged ivory bone. Every bone is modelled, from the skull and jaw to the fingers and feet. Animated idle, walk, wave and look around, sharing the people models' skeleton.",
+  "license": "CC0-1.0",
+  "version": 1,
+  "changes": "First release.",
+  "created": "2026-10-27",
+  "updated": "2026-10-27",
+  "units": "meters",
+  "up": "+Y",
+  "forward": "+Z",
+  "dimensions": {
+    "x": 1.319,
+    "y": 1.744,
+    "z": 0.296
+  },
+  "parts": [],
+  "animations": [
+    {
+      "name": "idle",
+      "duration": 5.033
+    },
+    {
+      "name": "look_around",
+      "duration": 5.033
+    },
+    {
+      "name": "walk",
+      "duration": 1.033
+    },
+    {
+      "name": "wave",
+      "duration": 3.633
+    }
+  ],
+  "wind": false,
+  "preview": "/models/skeleton/v1/preview.webp",
+  "files": [
+    {
+      "lod": 0,
+      "path": "/models/skeleton/v1/lod0.glb",
+      "bytes": 1916588,
+      "sha256": "87f9f88bca06061afdea90922e8ec73da0e4ce677b74842e7dd98cae6e7e1788",
+      "triangles": 26826
+    },
+    {
+      "lod": 1,
+      "path": "/models/skeleton/v1/lod1.glb",
+      "bytes": 735848,
+      "sha256": "1597eee9a0d4743ce3d74e6078632448a8db44c4d1d2d87017995e5f787390a1",
+      "triangles": 8184
+    },
+    {
+      "lod": 2,
+      "path": "/models/skeleton/v1/lod2.glb",
+      "bytes": 436388,
+      "sha256": "5873fd89039b8433b7660b19ad54bde0b5e917663300b532694beb644f6a42f0",
+      "triangles": 2134
+    }
+  ],
+  "versions": [
+    {
+      "version": 1,
+      "date": "2026-10-27",
+      "changes": "First release.",
+      "preview": "/models/skeleton/v1/preview.webp",
+      "files": [
+        {
+          "lod": 0,
+          "path": "/models/skeleton/v1/lod0.glb",
+          "bytes": 1916588,
+          "sha256": "87f9f88bca06061afdea90922e8ec73da0e4ce677b74842e7dd98cae6e7e1788",
+          "triangles": 26826
+        },
+        {
+          "lod": 1,
+          "path": "/models/skeleton/v1/lod1.glb",
+          "bytes": 735848,
+          "sha256": "1597eee9a0d4743ce3d74e6078632448a8db44c4d1d2d87017995e5f787390a1",
+          "triangles": 8184
+        },
+        {
+          "lod": 2,
+          "path": "/models/skeleton/v1/lod2.glb",
+          "bytes": 436388,
+          "sha256": "5873fd89039b8433b7660b19ad54bde0b5e917663300b532694beb644f6a42f0",
+          "triangles": 2134
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+.DS_Store
+DerivedData/
+build/
+dist/
+*.xcresult/
+xcuserdata/
+*.xcuserstate
+.build/
+__pycache__/
+*.pyc
+*.blend1
+*.blend2
+/XArcana/Mac Head Tracking/bin/
+*.ipa
+*.dmg
+*.xcarchive/
+
+**/Previews/
+*.mobileprovision
+*.p12
+*.p8

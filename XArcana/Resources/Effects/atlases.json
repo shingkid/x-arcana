@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "effects": {
+    "lightning": {
+      "atlas": "lightning-atlas.png",
+      "frameCount": 22,
+      "frameWidth": 98,
+      "frameHeight": 203,
+      "atlasWidth": 1024,
+      "atlasHeight": 1024,
+      "columns": 10,
+      "padding": 2,
+      "sha256": "ba8a0938eddd3781c1860f1649ba9c7452a72562c2b9ecf637342f013630f187"
+    },
+    "fire": {
+      "atlas": "fire-atlas.png",
+      "frameCount": 30,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "atlasWidth": 1024,
+      "atlasHeight": 1024,
+      "columns": 7,
+      "padding": 2,
+      "sha256": "023d96f5db7d3fd42037597b626bb9bf1dd3fc57966841d9dc806dbad5029612"
+    },
+    "ice": {
+      "atlas": "ice-atlas.png",
+      "frameCount": 30,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "atlasWidth": 1024,
+      "atlasHeight": 1024,
+      "columns": 7,
+      "padding": 2,
+      "sha256": "8a55c14b9e7188fad3c1ed21d34061aefb5997405a06a515cb729d31fbc3b0c5"
+    },
+    "shield": {
+      "atlas": "shield-atlas.png",
+      "frameCount": 40,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "atlasWidth": 1024,
+      "atlasHeight": 1024,
+      "columns": 7,
+      "padding": 2,
+      "sha256": "04cc22861fe8c76610077f4d748b4ae133de86779ebe87973b6119c8a34c2171"
+    },
+    "summon": {
+      "atlas": "summon-atlas.png",
+      "frameCount": 40,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "atlasWidth": 1024,
+      "atlasHeight": 1024,
+      "columns": 7,
+      "padding": 2,
+      "sha256": "5a02697c695ebbf6ca5c49b4de4a18e575f3464b79220efa0fccb532086c5c34"
+    }
+  }
+}

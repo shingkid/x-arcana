@@ -1,0 +1,76 @@
+--- a/src/device_imu.c
++++ b/src/device_imu.c
+@@ -125,7 +125,7 @@
+ 		payload_size = MAX_PACKET_SIZE;
+ 	}
+ 
+-	int transferred = hid_read(device->handle, payload, payload_size);
++	int transferred = hid_read_timeout(device->handle, payload, payload_size, 2000);
+ 
+ 	if (transferred >= payload_size)
+ 	{
+@@ -184,27 +184,16 @@
+ 
+ static bool recv_payload_msg(device_imu_type *device, uint8_t msgid, uint8_t len, uint8_t *data)
+ {
+-	static device_imu_payload_packet_type packet;
+-
+-	packet.head = 0;
+-	packet.length = 0;
+-	packet.msgid = 0;
+-
+-	const uint16_t packet_len = 3 + len;
+-	const uint16_t payload_len = 5 + packet_len;
+-
+-	if (!recv_payload(device, payload_len, (uint8_t *)(&packet)))
+-	{
+-		return false;
+-	}
+-
+-	if (packet.msgid != msgid)
+-	{
+-		return false;
++	device_imu_payload_packet_type packet;
++	for (int attempt = 0; attempt < 64; attempt++) {
++		int count = hid_read_timeout(device->handle, (uint8_t *)&packet, sizeof(packet), 2000);
++		if (count <= 0) return false;
++		if (count < 8 + len || packet.head != 0xaa || packet.msgid != msgid) continue;
++		if (le16toh(packet.length) < 3 + len) return false;
++		memcpy(data, packet.data, len);
++		return true;
+ 	}
+-
+-	memcpy(data, packet.data, len);
+-	return true;
++	return false;
+ }
+ 
+ static FusionVector json_object_get_vector(struct json_object *obj)
+@@ -463,6 +452,7 @@
+ 
+ 	device->calibration->noises = FUSION_IDENTITY_QUATERNION;
+ 	device->calibration->noises.element.w = 0.0f;
++	return DEVICE_IMU_ERROR_NO_ERROR;
+ }
+ 
+ device_imu_error_type device_imu_load_calibration(device_imu_type *device, const char *path)
+@@ -974,7 +964,7 @@
+ 
+ 	const uint64_t timestamp = le64toh(packet.timestamp);
+ 
+-	if ((packet.signature[0] == 0xaa) && (packet.signature[1] == 0x53))
++	if ((packet.signature[0] == 0xaa) && (((const uint8_t *)&packet)[7] == DEVICE_IMU_MSG_START_IMU_DATA))
+ 	{
+ 		device_imu_callback(device, timestamp, DEVICE_IMU_EVENT_INIT);
+ 		return DEVICE_IMU_ERROR_NO_ERROR;
+@@ -986,7 +976,9 @@
+ 		return DEVICE_IMU_ERROR_WRONG_SIGNATURE;
+ 	}
+ 
+-	const uint64_t delta = timestamp - device->last_timestamp;
++	const uint64_t delta = (device->last_timestamp == 0 || timestamp <= device->last_timestamp ||
++		timestamp - device->last_timestamp > 100000000)
++		? 1000000 : timestamp - device->last_timestamp;
+ 	const float deltaTime = (float)((double)delta / 1e9);
+ 
+ 	device->last_timestamp = timestamp;

@@ -1,0 +1,139 @@
+{
+  "format": "signed 16-bit little-endian PCM WAV",
+  "generator": "Tools/GenerateAudio.py",
+  "processing": "layered synthesis, diffuse echoes, soft saturation, peak and RMS headroom",
+  "sounds": {
+    "ambience": {
+      "bits": 16,
+      "channels": 2,
+      "clipped_samples": 0,
+      "duration_seconds": 32.0,
+      "peak": 0.280007,
+      "peak_ceiling": 0.28,
+      "peak_dbfs": -11.06,
+      "rms_dbfs": -24.66,
+      "sample_rate": 24000,
+      "sha256": "d5525c7dc0c70354eb04494b27967e2e3a43c248be398255a401b747926f509f"
+    },
+    "demon": {
+      "bits": 16,
+      "channels": 1,
+      "clipped_samples": 0,
+      "duration_seconds": 3.6,
+      "peak": 0.292917,
+      "peak_ceiling": 0.52,
+      "peak_dbfs": -10.67,
+      "rms_dbfs": -18.42,
+      "sample_rate": 24000,
+      "sha256": "bec54b03fa2b7e1a3efc47a25c001eb3401c8b506d682d3c23393429d36ca8ea"
+    },
+    "fireball": {
+      "bits": 16,
+      "channels": 1,
+      "clipped_samples": 0,
+      "duration_seconds": 1.95,
+      "peak": 0.605213,
+      "peak_ceiling": 0.64,
+      "peak_dbfs": -4.36,
+      "rms_dbfs": -15.92,
+      "sample_rate": 24000,
+      "sha256": "b7d9586aeba99e083133c215cfca0fb739024e9144a292a26f8e447d36b45079"
+    },
+    "ice": {
+      "bits": 16,
+      "channels": 1,
+      "clipped_samples": 0,
+      "duration_seconds": 1.65,
+      "peak": 0.640004,
+      "peak_ceiling": 0.64,
+      "peak_dbfs": -3.88,
+      "rms_dbfs": -19.69,
+      "sample_rate": 24000,
+      "sha256": "f344c7dacbfced9cb900fa944a15a7c56963d56e5a6f37f789f8d051c2fab70f"
+    },
+    "lumos": {
+      "bits": 16,
+      "channels": 1,
+      "clipped_samples": 0,
+      "duration_seconds": 1.8,
+      "peak": 0.640004,
+      "peak_ceiling": 0.64,
+      "peak_dbfs": -3.88,
+      "rms_dbfs": -17.76,
+      "sample_rate": 24000,
+      "sha256": "fdf6a0a7266a3d787baa4bb94db0705e161b548043cdcfb41837f7615c8a9af5"
+    },
+    "patronus": {
+      "bits": 16,
+      "channels": 1,
+      "clipped_samples": 0,
+      "duration_seconds": 3.4,
+      "peak": 0.640004,
+      "peak_ceiling": 0.64,
+      "peak_dbfs": -3.88,
+      "rms_dbfs": -18.14,
+      "sample_rate": 24000,
+      "sha256": "3ad4ccf795c37e3fbee0a16145337d2ef4f33cd3a4d032baf7d9b78288622130"
+    },
+    "revelio": {
+      "bits": 16,
+      "channels": 1,
+      "clipped_samples": 0,
+      "duration_seconds": 1.9,
+      "peak": 0.48796,
+      "peak_ceiling": 0.64,
+      "peak_dbfs": -6.23,
+      "rms_dbfs": -15.92,
+      "sample_rate": 24000,
+      "sha256": "b5b89616c1399dd58b97a7a6ac32c3fce5a3f7f1851162ee1f371a603763bc7b"
+    },
+    "shield": {
+      "bits": 16,
+      "channels": 1,
+      "clipped_samples": 0,
+      "duration_seconds": 1.9,
+      "peak": 0.640004,
+      "peak_ceiling": 0.64,
+      "peak_dbfs": -3.88,
+      "rms_dbfs": -17.08,
+      "sample_rate": 24000,
+      "sha256": "71f95ed5a1b742c02e63fb31ddc5f0c97b1e090fb2d7dc1085b7cd9b42a0a229"
+    },
+    "sparks": {
+      "bits": 16,
+      "channels": 1,
+      "clipped_samples": 0,
+      "duration_seconds": 0.8,
+      "peak": 0.400006,
+      "peak_ceiling": 0.4,
+      "peak_dbfs": -7.96,
+      "rms_dbfs": -23.9,
+      "sample_rate": 24000,
+      "sha256": "71795f6a6495ca0e8e8723500fe5de910840a55db7a6bd821547e4f6d9efdeb3"
+    },
+    "summon": {
+      "bits": 16,
+      "channels": 1,
+      "clipped_samples": 0,
+      "duration_seconds": 2.8,
+      "peak": 0.640004,
+      "peak_ceiling": 0.64,
+      "peak_dbfs": -3.88,
+      "rms_dbfs": -16.83,
+      "sample_rate": 24000,
+      "sha256": "90ea00fa854098fce83313a0e3260951c67d4fa05ee4fff044d475b44a4fdda2"
+    },
+    "zap": {
+      "bits": 16,
+      "channels": 1,
+      "clipped_samples": 0,
+      "duration_seconds": 1.15,
+      "peak": 0.640004,
+      "peak_ceiling": 0.64,
+      "peak_dbfs": -3.88,
+      "rms_dbfs": -17.48,
+      "sample_rate": 24000,
+      "sha256": "0b4a4a3ca80f2cedf101678c53d4e7bb9f771c1fe8dd0560cb43ca8bfb6ca4ba"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "Demon": {
+    "triangles": 47999,
+    "bones": 58,
+    "clips": [
+      "idle",
+      "walk",
+      "slap",
+      "slam",
+      "clawCombo",
+      "breath"
+    ],
+    "textures": "1024 px source maps",
+    "pose": "Weighted detailed surface; independently animated skeleton"
+  },
+  "Stag": {
+    "triangles": 54351,
+    "bones": 31,
+    "clips": [
+      "run",
+      "walk",
+      "idle"
+    ],
+    "textures": "1024 px source maps",
+    "pose": "Weighted detailed surface; independently animated skeleton"
+  }
+}

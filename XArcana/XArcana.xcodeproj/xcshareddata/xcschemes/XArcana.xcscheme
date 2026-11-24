@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Scheme LastUpgradeVersion="2700" version="1.7">
+  <BuildAction parallelizeBuildables="YES" buildImplicitDependencies="YES">
+    <BuildActionEntries>
+      <BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES">
+        <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="E4C8180E4EF2C802167B94EA" BuildableName="X Arcana.app" BlueprintName="XArcana" ReferencedContainer="container:XArcana.xcodeproj" />
+      </BuildActionEntry>
+    </BuildActionEntries>
+  </BuildAction>
+  <TestAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.DebuggerFoundation.Launcher.LLDB" shouldUseLaunchSchemeArgsEnv="YES">
+    <Testables>
+      <TestableReference skipped="NO" parallelizable="NO">
+        <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="517AA014450551F1F24FBE70" BuildableName="XArcana Tests.xctest" BlueprintName="XArcana Tests" ReferencedContainer="container:XArcana.xcodeproj" />
+      </TestableReference>
+      <TestableReference skipped="NO" parallelizable="NO">
+        <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="6D78507C9182756A1A3EA66B" BuildableName="XArcana UI Tests.xctest" BlueprintName="XArcana UI Tests" ReferencedContainer="container:XArcana.xcodeproj" />
+      </TestableReference>
+    </Testables>
+  </TestAction>
+  <LaunchAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.DebuggerFoundation.Launcher.LLDB" launchStyle="0" useCustomWorkingDirectory="NO" ignoresPersistentStateOnLaunch="NO" debugDocumentVersioning="YES" debugServiceExtension="internal" allowLocationSimulation="YES">
+    <BuildableProductRunnable runnableDebuggingMode="0">
+      <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="E4C8180E4EF2C802167B94EA" BuildableName="X Arcana.app" BlueprintName="XArcana" ReferencedContainer="container:XArcana.xcodeproj" />
+    </BuildableProductRunnable>
+  </LaunchAction>
+  <ProfileAction buildConfiguration="Release" shouldUseLaunchSchemeArgsEnv="YES" savedToolIdentifier="" useCustomWorkingDirectory="NO" debugDocumentVersioning="YES">
+    <BuildableProductRunnable runnableDebuggingMode="0">
+      <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="E4C8180E4EF2C802167B94EA" BuildableName="X Arcana.app" BlueprintName="XArcana" ReferencedContainer="container:XArcana.xcodeproj" />
+    </BuildableProductRunnable>
+  </ProfileAction>
+  <AnalyzeAction buildConfiguration="Debug" />
+  <ArchiveAction buildConfiguration="Release" revealArchiveInOrganizer="YES" />
+</Scheme>
