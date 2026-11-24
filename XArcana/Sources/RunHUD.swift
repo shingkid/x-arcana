@@ -127,6 +127,7 @@ final class RunSpellGuide: UIView {
 }
 
 final class RunOverView: UIView {
+    private let title = UILabel()
     var onRestart: (() -> Void)?
     private let details = UILabel()
     private let restart = UIButton(type: .system)
@@ -136,7 +137,6 @@ final class RunOverView: UIView {
         accessibilityIdentifier = "runOver"
         backgroundColor = Palette.ink.withAlphaComponent(0.98)
         layer.cornerRadius = 18
-        let title = UILabel()
         title.attributedText = NSAttributedString(string: "YOU DIED", attributes: [.kern: 4])
         title.font = UIFont(name: "Baskerville", size: 50) ?? .systemFont(ofSize: 50, weight: .regular)
         title.textColor = UIColor(red: 0.82, green: 0.12, blue: 0.09, alpha: 1)
@@ -178,8 +178,13 @@ final class RunOverView: UIView {
     func show(_ run: RunSnapshot?, connected: Bool = true) {
         isHidden = run?.isGameOver != true
         guard let run, run.isGameOver else { return }
+        title.attributedText = NSAttributedString(
+            string: run.hasWon ? "VICTORY" : "YOU DIED", attributes: [.kern: 4])
+        title.textColor = run.hasWon ? Palette.gold : UIColor(red: 0.82, green: 0.12, blue: 0.09, alpha: 1)
+        let reward = run.hasWon ? "Demon defeated · Star summon unlocked\n\n" : ""
         details.text =
-            "\(run.score) points · Level \(run.wave)\n\(run.kills) defeated\n\nBest score \(run.bestScore)\nBest cleared level \(run.bestWave)"
+            reward
+            + "\(run.score) points · Level \(run.wave)\n\(run.kills) defeated\n\nBest score \(run.bestScore)\nBest cleared level \(run.bestWave)"
         restart.isEnabled = connected
         restart.alpha = connected ? 1 : 0.5
     }

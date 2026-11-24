@@ -108,6 +108,7 @@ struct SpellCastContext {
         let name = kind == .patronus ? "Patronus" : kind.rawValue.capitalized
         switch outcome {
         case .summoned: return .accepted
+        case .locked: return .rejected("Defeat the level 10 demon to unlock this summon. No mana spent.", sparks: false)
         case .alreadyActive: return .rejected("\(name) is already here. No mana spent.", sparks: false)
         case .insufficientMana:
             return .rejected("Not enough mana. \(name) needs \(Int(kind.manaCost)).", sparks: true)

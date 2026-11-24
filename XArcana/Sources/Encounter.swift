@@ -51,6 +51,7 @@ final class Encounter: NSObject {
             return "Nyan locked · \(runSnapshot.nyanKillsSinceCast)/20 defeats"
         }
         if kind == .summon {
+            if !runSnapshot.demonUnlocked { return "Locked · Defeat the level 10 demon" }
             return runSnapshot.mana < 20 ? "Demon needs 20 mana" : "Demon · 20 MP/s · Release"
         }
         return "\(kind.title) · Release"
@@ -317,9 +318,14 @@ final class Encounter: NSObject {
             case .waveCleared(let wave):
                 self.stage.announce(
                     title: "Level \(wave) cleared!", detail: "+250 bonus score · Next level in 20 seconds")
+            case .bossPreparing(let attack):
+                let action = attack == .breath ? "fire breath" : (attack == .slam ? "a ground slam" : "claw strikes")
+                self.setStatus("Demon King is preparing \(action)!")
             case .waveStarted(let wave):
                 self.stage.announce(
-                    title: "Level \(wave)", detail: "Survive the horde · Health and mana full")
+                    title: wave == 10 ? "Final boss · Demon" : "Level \(wave)",
+                    detail: wave == 10
+                        ? "Defeat him to unlock the star summon" : "Survive the horde · Health and mana full")
             }
         }
         combat.setPaused(!simulationActive)
@@ -483,7 +489,10 @@ final class Encounter: NSObject {
             stage.clearAnnouncements()
             cancelDrawing()
             activeGesture = nil
-            status = "YOU DIED. Double-tap your phone to play again."
+            status =
+                runSnapshot.hasWon
+                ? "VICTORY. Star summon unlocked. Double-tap to play again."
+                : "YOU DIED. Double-tap your phone to play again."
         } else if !runSnapshot.hasStarted {
             status = setupHint
         } else if runSnapshot.countdownRemaining > 0 {

@@ -253,6 +253,40 @@ final class FantasyIntegrationTests: XCTestCase {
         attach(frame(14.7), name: "NPC faces and names on arriving zombies")
     }
 
+    @MainActor
+    func testFinalBossAndContinuousHealthBarRenderAtFullAndHalfHealth() throws {
+        let room = GameWorld()
+        let state = SurvivalState(defaults: nil)
+        for _ in 1..<10 { state.nextWave() }
+        let combat = Combat(scene: room.scene, camera: room.camera, environment: room.environment, state: state)
+        let root = try XCTUnwrap(room.scene.rootNode.childNode(withName: "Undead horde", recursively: false))
+        let boss = try XCTUnwrap(root.childNodes.compactMap { $0 as? Combat.CombatantNode }.first)
+        XCTAssertEqual(boss.kind, .demonBoss)
+        XCTAssertEqual(boss.health, 30)
+        XCTAssertNotNil(boss.childNode(withName: "DemonSculpture", recursively: true))
+        boss.simdPosition = SIMD3(0, room.environment.floorY + 0.7, 0)
+        room.camera.simdPosition = SIMD3(0, room.environment.floorY + 2.8, 7.8)
+        room.camera.simdLook(at: SIMD3(0, room.environment.floorY + 2.7, 0))
+        let renderer = SCNRenderer(device: try XCTUnwrap(MTLCreateSystemDefaultDevice()), options: nil)
+        renderer.scene = room.scene
+        renderer.pointOfView = room.camera
+        let size = CGSize(width: 1920, height: 1080)
+        SCNTransaction.flush()
+        _ = renderer.snapshot(atTime: 0, with: size, antialiasingMode: .none)
+        let full = renderer.snapshot(atTime: 0.1, with: size, antialiasingMode: .multisampling2X)
+        XCTAssertEqual(full.cgImage?.width, 1920)
+        XCTAssertFalse(boss.healthBar.isHidden)
+        attach(full, name: "Level 10 Demon boss - 30 of 30 HP")
+        boss.setHealth(15)
+        SCNTransaction.flush()
+        let half = renderer.snapshot(atTime: 0.2, with: size, antialiasingMode: .multisampling2X)
+        XCTAssertEqual(boss.health, 15)
+        XCTAssertFalse(boss.healthBar.isHidden)
+        XCTAssertNotEqual(full.pngData(), half.pngData())
+        attach(half, name: "Level 10 Demon boss - 15 of 30 HP")
+        withExtendedLifetime(combat) {}
+    }
+
     private func attach(_ image: UIImage, name: String) {
         let attachment = XCTAttachment(image: image)
         attachment.name = name

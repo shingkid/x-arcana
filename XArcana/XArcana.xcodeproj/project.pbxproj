@@ -288,6 +288,10 @@
 			"fileRef" = "EEE0CB00D95481913A6A26BF";
 			"isa" = "PBXBuildFile";
 		};
+		"34073E2EBB8D9A20D706567C" = {
+			"fileRef" = "F45421A3469F73E0675EA0DA";
+			"isa" = "PBXBuildFile";
+		};
 		"351EB9BF87ACDA08AF8AE7BB" = {
 			"fileRef" = "7CE692E7C76D0BB834A06F87";
 			"isa" = "PBXBuildFile";
@@ -479,6 +483,7 @@
 				"A7CCD3759EA3C4029D580AD9",
 				"6608A26C64FCC30D64C59063",
 				"6BE8050B3FFB547B61E89092",
+				"34073E2EBB8D9A20D706567C",
 			);
 			"isa" = "PBXSourcesBuildPhase";
 			"runOnlyForDeploymentPostprocessing" = "0";
@@ -1107,6 +1112,7 @@
 				"1E1FCEC51ABC0F1D8574F858",
 				"978BE9358BD35D8A3884A0ED",
 				"32C81833C419CE21948B4DD0",
+				"F45421A3469F73E0675EA0DA",
 			);
 			"isa" = "PBXGroup";
 			"path" = "Sources";
@@ -1314,6 +1320,12 @@
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
 			"path" = "EnvironmentDefinition.swift";
+			"sourceTree" = "<group>";
+		};
+		"F45421A3469F73E0675EA0DA" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "ZombieHealthBar.swift";
 			"sourceTree" = "<group>";
 		};
 		"F510EB626F5F60397E58A970" = {

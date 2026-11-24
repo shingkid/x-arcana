@@ -5,6 +5,8 @@ import simd
 /// A small, repeatable encounter. Positions and speeds are in metres.
 final class Combat {
     static let zombieMaxHealth: Double = 2
+    static let demonBossLevel = 10
+    static let demonBossMaxHealth: Double = 30
     static let spawnInterval: TimeInterval = 8
     static func spawnInterval(for level: Int) -> TimeInterval {
         max(2, spawnInterval * pow(0.9, Double(max(0, level - 1))))
@@ -16,6 +18,7 @@ final class Combat {
     enum Event: Equatable {
         case waveCleared(Int)
         case waveStarted(Int)
+        case bossPreparing(BossAttackStyle)
     }
 
     struct Identity: Decodable {
@@ -25,13 +28,16 @@ final class Combat {
     }
 
     enum Kind: String {
-        case zombie
+        case zombie, demonBoss
 
-        var halfWidth: Float { 0.38 }
-        var halfDepth: Float { 0.46 }
+        var halfWidth: Float { self == .demonBoss ? 0.8 : 0.38 }
+        var halfDepth: Float { self == .demonBoss ? 0.65 : 0.46 }
+        var height: Float { self == .demonBoss ? 2.8 : 1.82 }
+        var maxHealth: Double { self == .demonBoss ? Combat.demonBossMaxHealth : Combat.zombieMaxHealth }
     }
 
     enum MeleeAttack: String { case swipe, bite }
+    enum BossAttackStyle: String { case clawCombo, slam, breath }
 
     final class CombatantNode: SCNNode {
         var identityID = ""
@@ -39,6 +45,14 @@ final class Combat {
         var kind: Kind = .zombie
         var isDefeated = false
         var appearanceVariant = 0
+        var maxHealth: Double = Combat.zombieMaxHealth
+        var bossHealthText: SCNText?
+        private(set) var lastBossAttack: BossAttackStyle?
+        private(set) var bossAttackCount = 0
+        func recordBossAttack(_ attack: BossAttackStyle) {
+            lastBossAttack = attack
+            bossAttackCount += 1
+        }
         private(set) var lastMeleeAttack: MeleeAttack?
         private(set) var meleeAttackCount = 0
         func recordMelee(_ attack: MeleeAttack) {
@@ -46,11 +60,20 @@ final class Combat {
             meleeAttackCount += 1
         }
         private(set) var health: Double = Combat.zombieMaxHealth
+        let healthBar = ZombieHealthBar()
         private(set) var isTransfigured = false
-        func setTransfigured(_ value: Bool) { isTransfigured = value }
+        func setTransfigured(_ value: Bool) {
+            isTransfigured = value
+            healthBar.isHidden = value || health <= 0
+        }
         private(set) var slowRemaining: TimeInterval = 0
         func setSlowRemaining(_ value: TimeInterval) { slowRemaining = value }
-        func setHealth(_ value: Double) { health = value }
+        func setHealth(_ value: Double) {
+            health = value
+            healthBar.show(health: health, maximum: maxHealth)
+            bossHealthText?.string = String(format: "Demon King · %.1f/30 HP", max(0, health))
+            if isTransfigured { healthBar.isHidden = true }
+        }
     }
 
     static let identities: [Identity] = {
@@ -68,8 +91,8 @@ final class Combat {
         let identity: Identity
         let kind: Kind
         let phase: Float
-        let maxHealth = Combat.zombieMaxHealth
-        var health: Double = Combat.zombieMaxHealth
+        let maxHealth: Double
+        var health: Double
         var attackTimer: TimeInterval
         var motionTime: TimeInterval = 0
         var meleeMotion: (time: TimeInterval, attack: MeleeAttack)?
@@ -78,14 +101,18 @@ final class Combat {
         var transfiguration: RainbowCat?
         var hiddenOriginals: [SCNNode] = []
         var pendingMelee: (remaining: TimeInterval, target: SCNNode?, attack: MeleeAttack)?
+        var bossAttack: BossAttack?
+        var nextBossAttack = 0
         var center: SIMD3<Float> { node.simdPosition + SIMD3(0, 1.05 * node.simdScale.y, 0) }
 
         init(node: CombatantNode, identity: Identity, kind: Kind, index: Int) {
             self.node = node
             self.identity = identity
             self.kind = kind
+            maxHealth = kind.maxHealth
+            health = kind.maxHealth
             phase = Float(index) * 1.7
-            attackTimer = 1 + Double(index) * 0.15
+            attackTimer = kind == .demonBoss ? 2 : 1 + Double(index) * 0.15
             attackPose = node.childNode(withName: "Melee pose", recursively: true)
             var players: [SCNAnimationPlayer] = []
             node.enumerateChildNodes { child, _ in
@@ -100,6 +127,13 @@ final class Combat {
             }
             animations = players
         }
+    }
+
+    private struct BossAttack {
+        let style: BossAttackStyle
+        let target: SCNNode?
+        var elapsed: TimeInterval = 0
+        var contacts = 0
     }
 
     private struct Projectile {
@@ -139,11 +173,17 @@ final class Combat {
     var onEvent: ((Event) -> Void)?
     var kills: Int { run.snapshot.kills }
     var wave: Int { run.snapshot.wave }
+    var isBossFight: Bool { wave == Self.demonBossLevel }
     private(set) var blockedAttacks = 0
     var remaining: Int { enemies.filter { $0.health > 0 }.count }
-    var pendingSpawns: Int { run.snapshot.hasStarted && run.snapshot.countdownRemaining <= 0 ? 8 - spawnedThisWave : 0 }
+    var pendingSpawns: Int {
+        run.snapshot.hasStarted && run.snapshot.countdownRemaining <= 0 && !run.snapshot.isGameOver
+            ? max(0, (isBossFight ? 1 : 8) - spawnedThisWave) : 0
+    }
     var onStatus: ((String) -> Void)?
-    var summary: String { "Level \(wave) · \(remaining) zombies · \(kills) defeated" }
+    var summary: String {
+        isBossFight ? "Level 10 · Demon King · Final boss" : "Level \(wave) · \(remaining) zombies · \(kills) defeated"
+    }
 
     convenience init(
         scene: SCNScene, camera: SCNNode, floorY: Float,
@@ -234,6 +274,10 @@ final class Combat {
             lastRejection = .cooldown
             return false
         }
+        guard !isBossFight else {
+            lastRejection = .notReady
+            return false
+        }
         guard remaining > 0, run.snapshot.nyanKillsSinceCast >= 20 else {
             lastRejection = .cooldown
             return false
@@ -251,6 +295,7 @@ final class Combat {
     func summon(kind: SummonKind, makeNode: () -> SCNNode?) -> SummonResult {
         guard !run.snapshot.isGameOver else { return .gameOver }
         guard !isPaused, run.snapshot.hasStarted, run.snapshot.countdownRemaining <= 0 else { return .unavailable }
+        guard kind != .demon || run.snapshot.demonUnlocked else { return .locked }
         guard !allies.contains(kind) else { return .alreadyActive }
         guard run.canSpend(kind == .demon ? SummonCombat.demonManaPerSecond : SpellCatalog.summon(kind).manaCost) else {
             return .insufficientMana
@@ -326,6 +371,10 @@ final class Combat {
         let player = camera.simdWorldPosition
         for enemy in enemies where enemy.health > 0 {
             guard !run.snapshot.isGameOver else { break }
+            if enemy.kind == .demonBoss {
+                updateDemonBoss(enemy, dt: dt)
+                continue
+            }
             if let cat = enemy.transfiguration {
                 cat.update(deltaTime: dt)
                 enemy.node.setSlowRemaining(max(0, enemy.slowUntil - elapsed))
@@ -432,6 +481,7 @@ final class Combat {
         }
         guard !run.snapshot.isGameOver else { return }
         updateProjectiles(dt: dt)
+        guard !run.snapshot.isGameOver else { return }
         let targets = enemies.filter { $0.health > 0 && $0.transfiguration == nil }.map {
             SummonCombat.Target(node: $0.node, center: $0.center)
         }
@@ -449,7 +499,7 @@ final class Combat {
     }
 
     private func transfigure(_ enemy: Enemy) {
-        guard enemy.health > 0, enemy.transfiguration == nil else { return }
+        guard enemy.kind == .zombie, enemy.health > 0, enemy.transfiguration == nil else { return }
         enemy.pendingMelee = nil
         enemy.velocity = .zero
         enemy.node.removeAllActions()
@@ -760,6 +810,250 @@ final class Combat {
 
     }
 
+    private func updateDemonBoss(_ enemy: Enemy, dt: TimeInterval) {
+        let speed: Float = enemy.slowUntil > elapsed ? 0.5 : 1
+        enemy.node.setSlowRemaining(max(0, enemy.slowUntil - elapsed))
+        enemy.motionTime += dt * Double(speed)
+        enemy.velocity = .zero
+        if var attack = enemy.bossAttack {
+            attack.elapsed += dt * Double(speed)
+            let contacts: [TimeInterval] = attack.style == .clawCombo ? [0.65, 0.95] : [0.8]
+            while attack.contacts < contacts.count, attack.elapsed + 0.000001 >= contacts[attack.contacts] {
+                sampleBossFlight(enemy, attack: attack)
+                performBossContact(enemy, attack: attack)
+                attack.contacts += 1
+                if run.snapshot.isGameOver { return }
+            }
+            let duration: TimeInterval = attack.style == .slam ? 1.55 : (attack.style == .breath ? 1.6 : 1.4)
+            enemy.bossAttack = attack.elapsed >= duration ? nil : attack
+            sampleBossFlight(enemy, attack: enemy.bossAttack)
+            return
+        }
+
+        let player = camera.simdWorldPosition
+        let nearestAlly = allies.physicalTargets.min {
+            horizontalDistance(enemy.center, $0.center) < horizontalDistance(enemy.center, $1.center)
+        }
+        let victim = nearestAlly.flatMap {
+            horizontalDistance(enemy.center, $0.center) < horizontalDistance(enemy.center, player) ? $0 : nil
+        }
+        let target = victim?.center ?? player
+        var offset = target - enemy.node.simdPosition
+        offset.y = 0
+        let gap = simd_length(offset)
+        if gap > 0.001 {
+            let forward = offset / gap
+            let side = SIMD3<Float>(-forward.z, 0, forward.x)
+            // The boss circles slowly between attacks and closes for physical contacts.
+            let approach: Float = gap > 1.45 ? 0.72 : (gap < 1.1 ? -0.3 : 0)
+            enemy.velocity = (forward * approach + side * 0.2) * speed
+            let position = environment.movementBounds.clamped(enemy.node.simdPosition + enemy.velocity * Float(dt))
+            enemy.node.simdPosition.x = position.x
+            enemy.node.simdPosition.z = position.z
+            enemy.node.simdEulerAngles.y = atan2(offset.x, offset.z)
+        }
+        sampleBossFlight(enemy, attack: nil)
+        enemy.attackTimer -= dt * Double(speed)
+        guard enemy.attackTimer <= 0 else { return }
+        let styles: [BossAttackStyle] = [.breath, .clawCombo, .slam]
+        let style = styles[enemy.nextBossAttack % styles.count]
+        let reach: Float = style == .breath ? 4 : (style == .slam ? 2.2 : 1.6)
+        guard horizontalDistance(enemy.center, target) <= reach, abs(enemy.center.y - target.y) <= 3 else { return }
+        enemy.nextBossAttack += 1
+        enemy.attackTimer = style == .breath ? 3 : (style == .slam ? 4 : 2.4)
+        enemy.bossAttack = BossAttack(style: style, target: victim?.node)
+        enemy.node.recordBossAttack(style)
+        onEvent?(.bossPreparing(style))
+        CharacterAnimation.stop(on: enemy.node)
+        sampleBossFlight(enemy, attack: enemy.bossAttack)
+        onStatus?(
+            style == .breath
+                ? "Demon King is preparing fire breath!"
+                : "Demon King is preparing \(style == .slam ? "a ground slam" : "claw strikes")!")
+    }
+
+    private func sampleBossFlight(_ enemy: Enemy, attack: BossAttack?) {
+        let hover = 1.5 + sin(Float(enemy.motionTime) * 0.6) * 0.3
+        var height = hover
+        var clipTime = enemy.motionTime.truncatingRemainder(dividingBy: 2.4)
+        if let attack {
+            clipTime = attack.elapsed * (attack.style == .slam ? 0.35 / 0.8 : 0.45 / 0.8)
+            if attack.style == .slam {
+                let t = Float(attack.elapsed)
+                height *= t <= 0.8 ? max(0, 1 - t / 0.8) : min(1, (t - 0.8) / 0.65)
+            }
+        }
+        enemy.node.simdPosition.y = floorY + height
+        _ = CharacterAnimation.sample(attack?.style.rawValue ?? "idle", at: clipTime, on: enemy.node)
+        DemonFlight.sample(on: enemy.node, time: enemy.motionTime, slamTime: attack?.style == .slam ? clipTime : nil)
+    }
+
+    private func performBossContact(_ enemy: Enemy, attack: BossAttack) {
+        var targets = allies.physicalTargets.map { (node: Optional($0.node), center: $0.center) }
+        targets.append((node: nil, center: camera.simdWorldPosition))
+        let forward = SIMD3<Float>(sin(enemy.node.simdEulerAngles.y), 0, cos(enemy.node.simdEulerAngles.y))
+        let amount: Double
+        switch attack.style {
+        case .clawCombo: amount = 4
+        case .slam:
+            amount = 8
+            showBossSlam(at: SIMD3(enemy.node.simdPosition.x, floorY + 0.025, enemy.node.simdPosition.z))
+        case .breath:
+            amount = 6
+            showBossBreath(from: enemy, forward: forward)
+        }
+        for target in targets {
+            let offset = target.center - enemy.center
+            let gap = horizontalDistance(enemy.center, target.center)
+            guard abs(offset.y) <= 3 else { continue }
+            switch attack.style {
+            case .clawCombo:
+                guard target.node === attack.target, gap <= 1.6 else { continue }
+            case .slam:
+                guard gap <= 2.2 else { continue }
+            case .breath:
+                let flat = SIMD3(offset.x, 0, offset.z)
+                guard gap <= 4, gap < 0.001 || simd_dot(flat / gap, forward) >= 0.7071 else { continue }
+            }
+            if let ally = target.node {
+                if allies.isLiving(ally) { allies.damage(node: ally, amount: amount) }
+            } else {
+                let shielded = (run.snapshot.shieldHealth ?? 0) > 0
+                run.damage(amount)
+                if shielded {
+                    blockedAttacks += 1
+                    if let shieldNode { SpellVisuals.shieldContact(on: shieldNode, at: enemy.center) }
+                }
+                if run.snapshot.shieldHealth == 0 {
+                    shieldNode?.removeFromParentNode()
+                    shieldNode = nil
+                }
+                onStatus?(
+                    run.snapshot.isGameOver
+                        ? "Game over. Score \(run.snapshot.score)."
+                        : "Demon King \(attack.style.rawValue): \(amount) damage.")
+                onChange?()
+                if run.snapshot.isGameOver {
+                    finishTransfiguration(defeat: false)
+                    freezeVisuals(true)
+                    return
+                }
+            }
+        }
+    }
+
+    private func showBossSlam(at point: SIMD3<Float>) {
+        let ring = SCNTorus(ringRadius: 2.2, pipeRadius: 0.035)
+        ring.firstMaterial = material(.orange, glowing: true)
+        let node = SCNNode(geometry: ring)
+        node.name = "Demon boss slam"
+        node.categoryBitMask = 2
+        node.simdPosition = point
+        root.addChildNode(node)
+        node.runAction(.sequence([.fadeOut(duration: 0.6), .removeFromParentNode()]))
+    }
+
+    private func showBossBreath(from enemy: Enemy, forward: SIMD3<Float>) {
+        let node = SCNNode()
+        node.name = "Demon boss fire breath"
+        node.categoryBitMask = 2
+        node.simdPosition = CharacterAnimation.attachment("mouth", on: enemy.node)?.simdWorldPosition ?? enemy.center
+        let direction = simd_normalize(forward + SIMD3(0, (camera.simdWorldPosition.y - node.simdPosition.y) / 4, 0))
+        let flame = SCNParticleSystem()
+        flame.birthRate = UIAccessibility.isReduceMotionEnabled ? 70 : 180
+        flame.emissionDuration = 0.65
+        flame.loops = false
+        flame.particleLifeSpan = 0.65
+        flame.particleVelocity = 5
+        flame.emittingDirection = SCNVector3(direction)
+        flame.spreadingAngle = 25
+        flame.particleSize = 0.13
+        flame.particleColor = .orange
+        flame.blendMode = .additive
+        flame.isLocal = false
+        node.addParticleSystem(flame)
+        root.addChildNode(node)
+        node.runAction(.sequence([.wait(duration: 1.5), .removeFromParentNode()]))
+    }
+
+    private func finishBossFight(_ enemy: Enemy) {
+        enemy.bossAttack = nil
+        enemy.pendingMelee = nil
+        enemy.velocity = .zero
+        enemy.node.isDefeated = true
+        enemy.node.bossHealthText?.string = "Demon King defeated"
+        enemy.node.healthBar.isHidden = true
+        nextWave = nil
+        for projectile in projectiles { projectile.node.removeFromParentNode() }
+        projectiles.removeAll()
+        allies.reset()
+        shieldNode?.removeFromParentNode()
+        shieldNode = nil
+        CharacterAnimation.stop(on: enemy.node)
+        enemy.node.removeFromParentNode()
+        enemy.node.simdPosition.y = floorY
+        run.recordBossDefeat()
+        freezeVisuals(true)
+        onStatus?("Victory! Demon King defeated. Demon summon unlocked.")
+        onChange?()
+    }
+
+    private func spawnDemonBoss() {
+        let point = environment.enemySpawns[0].vector
+        let node = CombatantNode()
+        node.name = "Enemy.demon-boss.demonBoss"
+        node.identityID = "demon-boss"
+        node.identityName = "Demon King"
+        node.kind = .demonBoss
+        node.maxHealth = Self.demonBossMaxHealth
+        node.categoryBitMask = 2
+        if let model = RuneEffects.summon(in: scene, at: point, facing: camera.simdWorldPosition) {
+            node.addChildNode(model)
+            model.simdPosition = .zero
+            model.simdEulerAngles = .zero
+            CharacterAnimation.stop(on: model)
+        } else {
+            // A missing asset must leave a visible, targetable boss rather than an empty encounter.
+            let body = SCNCapsule(capRadius: 0.5, height: 2)
+            body.firstMaterial = material(.systemRed)
+            let fallback = SCNNode(geometry: body)
+            fallback.position.y = 1
+            fallback.categoryBitMask = 2
+            node.addChildNode(fallback)
+            NSLog("Demon boss asset unavailable; using visible fallback")
+        }
+        node.healthBar.name = "Demon boss health"
+        node.healthBar.useContinuousFill()
+        node.healthBar.simdPosition = SIMD3(0, 3.05, 0)
+        node.healthBar.simdScale = SIMD3(2.6, 2.4, 1)
+        node.addChildNode(node.healthBar)
+        let title = SCNText(string: "Demon King · 30/30 HP", extrusionDepth: 0)
+        title.font = .systemFont(ofSize: 18, weight: .bold)
+        title.flatness = 0.3
+        title.materials = [material(.white, glowing: true)]
+        title.firstMaterial?.isDoubleSided = true
+        let label = SCNNode(geometry: title)
+        label.name = "Demon boss name and HP"
+        let bounds = title.boundingBox
+        let scale: Float = 0.2 / max(1, bounds.max.y - bounds.min.y)
+        label.simdScale = SIMD3(repeating: scale)
+        label.pivot = SCNMatrix4MakeTranslation((bounds.max.x + bounds.min.x) / 2, 0, 0)
+        label.simdPosition = SIMD3(0, 3.25, 0)
+        label.constraints = [SCNBillboardConstraint()]
+        label.categoryBitMask = 2
+        node.addChildNode(label)
+        node.bossHealthText = title
+        node.setHealth(Self.demonBossMaxHealth)
+        node.simdPosition = point
+        root.addChildNode(node)
+        let identity = Identity(id: "demon-boss", name: "Demon King", image: "")
+        let enemy = Enemy(node: node, identity: identity, kind: .demonBoss, index: 0)
+        enemies.append(enemy)
+        spawnedThisWave = 1
+        sampleBossFlight(enemy, attack: nil)
+        onStatus?("Final level. Defeat the Demon King!")
+    }
+
     private func updateProjectiles(dt: TimeInterval) {
         for index in projectiles.indices.reversed() {
             projectiles[index].age += dt
@@ -775,7 +1069,8 @@ final class Combat {
                     from: start, to: end,
                     minimum: foot + SIMD3(-enemy.kind.halfWidth, 0.12, -enemy.kind.halfDepth) * enemy.node.simdScale
                         - SIMD3(repeating: padding),
-                    maximum: foot + SIMD3(enemy.kind.halfWidth, 1.82, enemy.kind.halfDepth) * enemy.node.simdScale
+                    maximum: foot + SIMD3(enemy.kind.halfWidth, enemy.kind.height, enemy.kind.halfDepth)
+                        * enemy.node.simdScale
                         + SIMD3(repeating: padding)),
                     fraction < (impact ?? 2)
                 {
@@ -806,11 +1101,19 @@ final class Combat {
                     } else {
                         burst(at: point, color: victim == nil ? .cyan : .orange)
                     }
-                    if let victim { damage(victim, amount: projectile.isLightning ? 2 : victim.maxHealth / 3) }
+                    if let victim {
+                        damage(
+                            victim,
+                            amount: projectile.isLightning
+                                ? 2 : (victim.kind == .demonBoss ? Self.zombieMaxHealth : victim.maxHealth) / 3)
+                    }
                 }
             }
+            // Boss victory removes every projectile, including this one.
+            guard !run.snapshot.isGameOver else { return }
             if impact != nil || projectile.age > 4 || end.y < floorY || !environment.projectileBounds.contains(end) {
                 if impact == nil, projectile.blastRadius > 0 { explode(at: end, radius: projectile.blastRadius) }
+                guard !run.snapshot.isGameOver else { return }
                 projectile.node.removeFromParentNode()
                 projectiles.remove(at: index)
             } else {
@@ -832,6 +1135,10 @@ final class Combat {
             return
         }
         enemy.node.opacity = 1
+        if enemy.kind == .demonBoss {
+            finishBossFight(enemy)
+            return
+        }
         run.recordKill()
         enemy.pendingMelee = nil
         onChange?()
@@ -861,12 +1168,16 @@ final class Combat {
         for enemy in enemies { enemy.node.removeFromParentNode() }
         enemies.removeAll()
         spawnedThisWave = 0
-        spawnNextZombie()
+        if isBossFight {
+            spawnDemonBoss()
+        } else {
+            spawnNextZombie()
+        }
         onEvent?(.waveStarted(wave))
     }
 
     private func spawnNextZombie() {
-        guard pendingSpawns > 0 else { return }
+        guard !isBossFight, pendingSpawns > 0 else { return }
         let positions = environment.enemySpawns
         let roster = Self.identities.isEmpty ? [Identity(id: "unknown", name: "Lost soul", image: "")] : Self.identities
         let index = spawnedThisWave
@@ -884,6 +1195,8 @@ final class Combat {
         let node = CombatantNode()
         node.categoryBitMask = 2
         node.addChildNode(body)
+        node.addChildNode(node.healthBar)
+        node.setHealth(Self.zombieMaxHealth)
         node.name = "Enemy.\(identity.id).\(kind.rawValue)"
         node.identityID = identity.id
         node.identityName = identity.name

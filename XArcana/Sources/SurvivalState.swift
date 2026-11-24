@@ -27,7 +27,7 @@ enum SummonKind: String, Codable, CaseIterable {
 }
 
 enum SummonResult: Equatable {
-    case summoned, alreadyActive, insufficientMana, unavailable, gameOver
+    case summoned, alreadyActive, insufficientMana, unavailable, gameOver, locked
 }
 
 enum CombatRejection: String {
@@ -49,6 +49,8 @@ struct RunSnapshot: Codable, Equatable {
     var bestScore: Int = 0
     var bestWave: Int = 0
     var isGameOver: Bool = false
+    var hasWon: Bool = false
+    var demonUnlocked: Bool = false
     var shieldHealth: Double? = 0
     // Legacy timed-shield snapshots remain decodable. New shields have no duration.
     var shieldRemaining: Double = 0
@@ -74,6 +76,7 @@ final class SurvivalState {
         snapshot.hasStarted = hasStarted
         snapshot.bestScore = defaults?.integer(forKey: "XArcana.bestScore") ?? 0
         snapshot.bestWave = defaults?.integer(forKey: "XArcana.bestWave") ?? 0
+        snapshot.demonUnlocked = defaults?.bool(forKey: "XArcana.demonUnlocked") ?? false
     }
 
     func update(deltaTime: TimeInterval, suppressRegeneration: Bool = false) {
@@ -155,12 +158,27 @@ final class SurvivalState {
         saveRecords()
     }
 
+    /// Only the authoritative boss death calls this; repeats cannot award another victory.
+    func recordBossDefeat() {
+        guard snapshot.hasStarted, snapshot.countdownRemaining <= 0, snapshot.wave == 10,
+            !snapshot.isGameOver
+        else { return }
+        snapshot.demonUnlocked = true
+        defaults?.set(true, forKey: "XArcana.demonUnlocked")
+        snapshot.score += 1_250
+        snapshot.bestWave = max(snapshot.bestWave, 10)
+        snapshot.nyanRemaining = 0
+        snapshot.hasWon = true
+        snapshot.isGameOver = true
+        saveRecords()
+    }
+
     func nextWave() {
         guard snapshot.hasStarted, snapshot.countdownRemaining <= 0, !snapshot.isGameOver else { return }
         snapshot.wave += 1
         snapshot.level = snapshot.wave
-        snapshot.maxHealth += 10
-        snapshot.maxMana += 10
+        snapshot.maxHealth += snapshot.wave == 10 ? 20 : 10
+        snapshot.maxMana += snapshot.wave == 10 ? 20 : 10
         snapshot.health = Double(snapshot.maxHealth)
         snapshot.mana = snapshot.maxMana
         regenerationDelay = 0
@@ -169,10 +187,12 @@ final class SurvivalState {
     func restart(hasStarted: Bool = true) {
         let bestScore = snapshot.bestScore
         let bestWave = snapshot.bestWave
+        let demonUnlocked = snapshot.demonUnlocked
         snapshot = RunSnapshot()
         snapshot.hasStarted = hasStarted
         snapshot.bestScore = bestScore
         snapshot.bestWave = bestWave
+        snapshot.demonUnlocked = demonUnlocked
         regenerationDelay = 0
     }
 
@@ -208,6 +228,8 @@ extension RunSnapshot {
         bestScore = try values.decodeIfPresent(Int.self, forKey: .bestScore) ?? bestScore
         bestWave = try values.decodeIfPresent(Int.self, forKey: .bestWave) ?? bestWave
         isGameOver = try values.decodeIfPresent(Bool.self, forKey: .isGameOver) ?? isGameOver
+        hasWon = try values.decodeIfPresent(Bool.self, forKey: .hasWon) ?? false
+        demonUnlocked = try values.decodeIfPresent(Bool.self, forKey: .demonUnlocked) ?? false
         shieldHealth = try values.decodeIfPresent(Double.self, forKey: .shieldHealth)
         shieldRemaining = try values.decodeIfPresent(Double.self, forKey: .shieldRemaining) ?? 0
         shieldCooldownRemaining = try values.decodeIfPresent(Double.self, forKey: .shieldCooldownRemaining) ?? 0

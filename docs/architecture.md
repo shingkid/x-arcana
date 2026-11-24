@@ -149,3 +149,24 @@ Spawning pauses during the 27-second curse, then resumes after the current level
 Only transformed zombies disappear at the song boundary.
 The glasses show Nyan progress out of 20.
 The bow has a 0.4-second reload.
+
+Zombie health bars sit below their names and face the player.
+The three sections represent three bow hits from full health.
+Spell and ally damage also update the bars, including partial sections.
+Bars disappear on death and during Nyan transfiguration.
+
+## Level 10 final boss
+
+Levels 1 to 9 contain zombie stages.
+Level 10 replaces the horde with one winged demon boss with 30 HP.
+Entering level 10 grants 20 maximum HP and MP instead of 10.
+Both resources refill to 200 for the boss fight.
+He flies slowly around the arena and signals attacks before contact.
+Each claw deals 4 damage, the ground slam deals 8, and fire breath deals 6.
+The boss has a continuous health bar and numeric HP above him.
+Arrows deal the normal zombie-scaled damage to the boss, rather than one-third of boss HP.
+Nyan cannot transform the boss.
+Defeating him ends the run in victory, awards 1,250 total boss and stage score, and permanently unlocks the star summon.
+Dying, reaching level 10, and drawing a star do not unlock it.
+Restart and Reset scores retain this unlock.
+After unlocking, the friendly demon keeps its 20 MP per second drain and five-second lifetime.

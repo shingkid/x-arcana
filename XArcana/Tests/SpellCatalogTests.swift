@@ -204,8 +204,29 @@ final class SpellCatalogTests: XCTestCase {
     }
 
     @MainActor
-    func testStarDemonStartsWithoutUpfrontCostAndDuplicateAndVoiceDoNotSpend() throws {
+    func testLockedStarDoesNotAnimateSpendManaOrRemoveAnExistingAlly() throws {
         let game = host()
+        defer { game.stop() }
+        game.handleVoice(.summonAlan)
+        let ally = try XCTUnwrap(
+            game.room.scene.rootNode.childNodes.first { $0.name?.hasPrefix("summon.alan.") == true })
+        let tip = try XCTUnwrap(game.room.camera.childNode(withName: "wandTip", recursively: true))
+        tip.removeAction(forKey: "cast")
+        let before = game.runSnapshot
+        XCTAssertFalse(game.castSpell(SpellCatalog.demon, at: game.room.castingPoint()))
+        XCTAssertEqual(game.runSnapshot, before)
+        XCTAssertNil(tip.action(forKey: "cast"))
+        XCTAssertNotNil(ally.parent)
+        XCTAssertNil(game.room.scene.rootNode.childNode(withName: "DemonSculpture", recursively: true))
+    }
+
+    @MainActor
+    func testStarDemonStartsWithoutUpfrontCostAndDuplicateAndVoiceDoNotSpend() throws {
+        let state = SurvivalState(defaults: nil)
+        for _ in 1..<10 { state.nextWave() }
+        state.recordBossDefeat()
+        state.restart()
+        let game = host(state: state)
         defer { game.stop() }
         let point = game.room.castingPoint()
         let tip = try XCTUnwrap(game.room.camera.childNode(withName: "wandTip", recursively: true))

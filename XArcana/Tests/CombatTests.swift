@@ -62,6 +62,34 @@ final class CombatTests: XCTestCase {
         XCTAssertTrue(target.hasActions)
     }
 
+    func testZombieHealthBarsAreIndependentFaceThePlayerAndPreserveFractionalDamage() throws {
+        let (scene, combat) = makeEncounter(cameraHeight: 6)
+        _ = advance(combat, from: 0, seconds: Combat.spawnInterval + 0.1)
+        let enemies = combatants(in: scene)
+        let first = try XCTUnwrap(enemies.first)
+        let second = try XCTUnwrap(enemies.last)
+        XCTAssertTrue(first.healthBar.parent === first)
+        XCTAssertTrue(first.healthBar.constraints?.first is SCNBillboardConstraint)
+        XCTAssertFalse(first.healthBar.isHidden)
+        XCTAssertLessThan(first.healthBar.position.y, 1.88, "Keep health below the name")
+        first.setHealth(1.1)
+        let fills = first.healthBar.childNodes.filter { $0.name?.hasPrefix("Health segment") == true }
+        XCTAssertEqual(fills.count, 3)
+        XCTAssertEqual(fills[0].simdScale.x, 1)
+        XCTAssertEqual(fills[1].simdScale.x, 0.65, accuracy: 0.00001)
+        XCTAssertTrue(fills[2].isHidden)
+        XCTAssertTrue(
+            second.healthBar.childNodes.filter { $0.name?.hasPrefix("Health segment") == true }.allSatisfy {
+                !$0.isHidden && $0.simdScale.x == 1
+            })
+        first.setTransfigured(true)
+        XCTAssertTrue(first.healthBar.isHidden)
+        first.setTransfigured(false)
+        XCTAssertFalse(first.healthBar.isHidden)
+        first.setHealth(0)
+        XCTAssertTrue(first.healthBar.isHidden)
+    }
+
     func testThreeArrowsDefeatAFullHealthZombieWithoutFractionalRemainder() throws {
         let (scene, combat) = makeEncounter()
         let enemy = try XCTUnwrap(combatants(in: scene).first)
@@ -75,10 +103,14 @@ final class CombatTests: XCTestCase {
             if hit < 3 {
                 XCTAssertEqual(enemy.health, maximum * Double(3 - hit) / 3, accuracy: 1e-12)
                 XCTAssertFalse(enemy.isDefeated)
+                XCTAssertFalse(enemy.healthBar.isHidden)
+                let fills = enemy.healthBar.childNodes.filter { $0.name?.hasPrefix("Health segment") == true }
+                XCTAssertEqual(fills.filter { !$0.isHidden }.count, 3 - hit)
                 XCTAssertEqual(combat.kills, 0)
             } else {
                 XCTAssertEqual(enemy.health, 0)
                 XCTAssertTrue(enemy.isDefeated)
+                XCTAssertTrue(enemy.healthBar.isHidden)
                 XCTAssertEqual(combat.kills, 1)
                 XCTAssertEqual(combat.runSnapshot.score, 100)
             }
@@ -230,7 +262,7 @@ final class CombatTests: XCTestCase {
     }
 
     func testSummonValidationPreservesExistingAllyAndMana() {
-        let state = SurvivalState(defaults: nil)
+        let state = unlockedDemonState()
         let (_, combat) = makeEncounter(state: state)
         let alan = SCNNode()
         XCTAssertEqual(combat.summon(kind: .alan) { alan }, .summoned)
@@ -976,7 +1008,9 @@ final class CombatTests: XCTestCase {
                 (SpellCatalog.summon(kind).manaCost, { $0.summon(kind: kind) { SCNNode() } == .summoned })
             }
         for (cost, action) in actions {
-            let (_, combat) = makeEncounter(state: chargedNyanState())
+            let state = unlockedDemonState()
+            for _ in 0..<20 { state.recordKill() }
+            let (_, combat) = makeEncounter(state: state)
             var published: [RunSnapshot] = []
             combat.onChange = { [weak combat] in
                 if let snapshot = combat?.runSnapshot { published.append(snapshot) }
@@ -1066,7 +1100,7 @@ final class CombatTests: XCTestCase {
     }
 
     func testDemonDrainsTwentyManaPerSecondWithoutRegenerationThenExpires() {
-        let (_, combat) = makeEncounter(cameraHeight: 6)
+        let (_, combat) = makeEncounter(cameraHeight: 6, state: unlockedDemonState())
         let demon = SCNNode()
         demon.simdPosition = SIMD3(0, 10, 4.8)
         XCTAssertEqual(combat.summon(kind: .demon) { demon }, .summoned)
@@ -1086,7 +1120,7 @@ final class CombatTests: XCTestCase {
     }
 
     func testDemonDismissesWhenManaRunsOutAndRestartStopsItsDrain() {
-        let state = SurvivalState(defaults: nil)
+        let state = unlockedDemonState()
         XCTAssertTrue(state.spend(80))
         let (_, combat) = makeEncounter(cameraHeight: 6, state: state)
         let demon = SCNNode()
@@ -1107,7 +1141,7 @@ final class CombatTests: XCTestCase {
     }
 
     func testDemonRequiresTwentyManaWithoutRemovingExistingAllyOnFailure() {
-        let state = SurvivalState(defaults: nil)
+        let state = unlockedDemonState()
         let (_, combat) = makeEncounter(cameraHeight: 6, state: state)
         let alan = SCNNode()
         XCTAssertEqual(combat.summon(kind: .alan) { alan }, .summoned)
@@ -1121,6 +1155,161 @@ final class CombatTests: XCTestCase {
         XCTAssertFalse(created)
         XCTAssertNotNil(alan.parent)
         XCTAssertEqual(combat.runSnapshot.mana, 19)
+    }
+
+    func testLockedDemonRejectsBeforeModelCreationManaAndAllyReplacement() {
+        let state = SurvivalState(defaults: nil)
+        let (_, combat) = makeEncounter(state: state)
+        let alan = SCNNode()
+        XCTAssertEqual(combat.summon(kind: .alan) { alan }, .summoned)
+        XCTAssertTrue(state.spend(75))
+        let before = combat.runSnapshot
+        var created = false
+        XCTAssertEqual(
+            combat.summon(kind: .demon) {
+                created = true
+                return SCNNode()
+            }, .locked)
+        XCTAssertFalse(created)
+        XCTAssertEqual(combat.runSnapshot, before)
+        XCTAssertNotNil(alan.parent)
+    }
+
+    func testFinalStageSpawnsOneThirtyHealthDemonWithoutZombiesOrNyan() throws {
+        let state = finalBossState()
+        for _ in 0..<20 { state.recordKill() }
+        let (scene, combat) = makeEncounter(cameraHeight: 6, state: state)
+        let boss = try XCTUnwrap(combatants(in: scene).first)
+        XCTAssertTrue(combat.isBossFight)
+        XCTAssertEqual(combat.wave, 10)
+        XCTAssertEqual(combat.runSnapshot.maxHealth, 200)
+        XCTAssertEqual(combat.runSnapshot.health, 200)
+        XCTAssertEqual(combat.runSnapshot.maxMana, 200)
+        XCTAssertEqual(combat.remaining, 1)
+        XCTAssertEqual(combat.pendingSpawns, 0)
+        XCTAssertEqual(boss.kind, .demonBoss)
+        XCTAssertEqual(boss.identityName, "Demon King")
+        XCTAssertEqual(boss.health, 30)
+        XCTAssertEqual(boss.maxHealth, 30)
+        XCTAssertNotNil(boss.childNode(withName: "DemonSculpture", recursively: true))
+        XCTAssertFalse(boss.healthBar.isHidden)
+        XCTAssertTrue(boss.healthBar.constraints?.first is SCNBillboardConstraint)
+        let before = combat.runSnapshot
+        XCTAssertFalse(combat.nyan())
+        XCTAssertEqual(combat.runSnapshot, before)
+        XCTAssertFalse(boss.isTransfigured)
+        _ = advance(combat, from: 0, seconds: 60)
+        XCTAssertEqual(combatants(in: scene).count, 1)
+        XCTAssertTrue(combatants(in: scene).allSatisfy { $0.kind == .demonBoss })
+        XCTAssertEqual(combat.pendingSpawns, 0)
+    }
+
+    func testBossRequiresFortyFiveArrowHitsAndAwardsOneVictoryWithoutNextStage() throws {
+        let (scene, combat) = makeEncounter(cameraHeight: 6, state: finalBossState())
+        let boss = try XCTUnwrap(combatants(in: scene).first)
+        var events: [Combat.Event] = []
+        combat.onEvent = { events.append($0) }
+        var time = 0.0
+        for hit in 1...45 {
+            boss.simdPosition = SIMD3(0, 1.5, 1.5)
+            XCTAssertTrue(combat.shoot(toward: center(boss)), "Arrow \(hit)")
+            time = advance(combat, from: time, seconds: 0.6)
+            XCTAssertEqual(boss.health, max(0, 30 - Double(hit) * 2 / 3), accuracy: 1e-10)
+            XCTAssertEqual(boss.isDefeated, hit == 45)
+            if hit < 45 {
+                XCTAssertFalse(combat.runSnapshot.hasWon)
+                XCTAssertFalse(combat.runSnapshot.demonUnlocked)
+                XCTAssertEqual(combat.kills, 0)
+                XCTAssertFalse(boss.healthBar.isHidden)
+            }
+        }
+        let victory = combat.runSnapshot
+        XCTAssertTrue(victory.isGameOver)
+        XCTAssertTrue(victory.hasWon)
+        XCTAssertTrue(victory.demonUnlocked)
+        XCTAssertEqual(victory.score, 1_250)
+        XCTAssertEqual(victory.bestWave, 10)
+        XCTAssertTrue(boss.healthBar.isHidden)
+        XCTAssertFalse(combat.shoot(toward: center(boss)))
+        XCTAssertFalse(combat.cast(toward: center(boss)))
+        _ = advance(combat, from: time, seconds: Combat.waveBreakDuration + 60)
+        XCTAssertEqual(combat.runSnapshot, victory)
+        XCTAssertEqual(combat.wave, 10)
+        XCTAssertEqual(combat.remaining, 0)
+        XCTAssertFalse(events.contains(.waveStarted(11)))
+    }
+
+    func testFlyingBossTelegraphsItsAttacksAndDealsTheDeclaredDamage() throws {
+        let (scene, combat) = makeEncounter(state: finalBossState())
+        let boss = try XCTUnwrap(combatants(in: scene).first)
+        boss.simdPosition = SIMD3(0, 1.5, 3.4)
+        let start = boss.simdPosition
+        var previous = combat.runSnapshot.health
+        var damage: [Double] = []
+        var telegraphs: [Combat.BossAttackStyle] = []
+        combat.onEvent = { if case .bossPreparing(let style) = $0 { telegraphs.append(style) } }
+        combat.onChange = {
+            let next = combat.runSnapshot.health
+            if next < previous { damage.append(previous - next) }
+            previous = next
+        }
+        let time = advance(combat, from: 0, seconds: 1)
+        XCTAssertNotEqual(boss.simdPosition, start)
+        XCTAssertLessThan(simd_distance(boss.simdPosition, start), 1)
+        XCTAssertEqual(combat.runSnapshot.health, 200, "The initial flight must give time to aim")
+        _ = advance(combat, from: time, seconds: 25)
+        XCTAssertTrue(telegraphs.contains(.clawCombo))
+        XCTAssertTrue(telegraphs.contains(.slam))
+        XCTAssertTrue(telegraphs.contains(.breath))
+        XCTAssertTrue(damage.contains(4), "Claw contacts deal four damage")
+        XCTAssertTrue(damage.contains(8), "Slam contact deals eight damage")
+        XCTAssertTrue(damage.contains(6), "Breath contact deals six damage")
+        XCTAssertTrue(damage.allSatisfy { [4.0, 6.0, 8.0].contains($0) })
+    }
+
+    func testBossTakesNormalElementalDamageAndPauseFreezesItsAttacks() throws {
+        let (scene, combat) = makeEncounter(state: finalBossState())
+        let boss = try XCTUnwrap(combatants(in: scene).first)
+        boss.simdPosition = SIMD3(0, 1.5, 2)
+        XCTAssertTrue(combat.cast(toward: center(boss)))
+        var time = advance(combat, from: 0, seconds: 0.5)
+        XCTAssertEqual(boss.health, 28)
+        boss.simdPosition = SIMD3(0, 1.5, 2)
+        XCTAssertTrue(combat.ice(toward: center(boss)))
+        XCTAssertEqual(boss.health, 26)
+        time = advance(combat, from: time, seconds: 0.3)
+        XCTAssertTrue(combat.fireball(toward: center(boss)))
+        time = advance(combat, from: time, seconds: 0.7)
+        XCTAssertEqual(boss.health, 21)
+        combat.setPaused(true)
+        let position = boss.simdPosition
+        let paused = combat.runSnapshot
+        time = advance(combat, from: time, seconds: 30)
+        XCTAssertEqual(combat.runSnapshot, paused)
+        XCTAssertEqual(boss.simdPosition, position)
+        XCTAssertFalse(combat.shoot(toward: center(boss)))
+        XCTAssertEqual(combat.lastRejection, .paused)
+        combat.setPaused(false)
+        for _ in 0..<600 {
+            boss.simdPosition = SIMD3(0, 1.5, 3.85)
+            time = advance(combat, from: time, seconds: 1.0 / 60)
+        }
+        XCTAssertLessThan(combat.runSnapshot.health, paused.health)
+        XCTAssertFalse(combat.runSnapshot.hasWon)
+        XCTAssertFalse(combat.runSnapshot.demonUnlocked)
+    }
+
+    private func finalBossState() -> SurvivalState {
+        let state = SurvivalState(defaults: nil)
+        for _ in 1..<10 { state.nextWave() }
+        return state
+    }
+
+    private func unlockedDemonState() -> SurvivalState {
+        let state = finalBossState()
+        state.recordBossDefeat()
+        state.restart()
+        return state
     }
 
     private func center(_ node: SCNNode) -> SIMD3<Float> {
@@ -1167,6 +1356,78 @@ final class CombatTests: XCTestCase {
 }
 
 final class SurvivalStateTests: XCTestCase {
+    func testBossVictoryUnlocksDemonAndAwardsTheFinalStageOnce() throws {
+        let state = SurvivalState(defaults: nil)
+        for _ in 1..<10 { state.nextWave() }
+        state.recordKill()
+        state.recordBossDefeat()
+        let victory = state.snapshot
+        XCTAssertTrue(victory.demonUnlocked)
+        XCTAssertTrue(victory.hasWon)
+        XCTAssertTrue(victory.isGameOver)
+        XCTAssertEqual(victory.score, 1_350)
+        XCTAssertEqual(victory.bestScore, 1_350)
+        XCTAssertEqual(victory.bestWave, 10)
+        state.recordBossDefeat()
+        state.recordKill()
+        state.clearWave()
+        state.nextWave()
+        state.damage(1_000)
+        state.update(deltaTime: 100)
+        XCTAssertEqual(state.snapshot, victory)
+        XCTAssertEqual(try JSONDecoder().decode(RunSnapshot.self, from: JSONEncoder().encode(victory)), victory)
+    }
+
+    func testDemonUnlockPersistsAcrossRestartScoreResetAndNewState() throws {
+        let suite = "XArcana.BossTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let state = SurvivalState(defaults: defaults)
+        XCTAssertFalse(state.snapshot.demonUnlocked)
+        XCTAssertFalse(state.snapshot.hasWon)
+        for _ in 1..<10 { state.nextWave() }
+        state.recordBossDefeat()
+        XCTAssertTrue(defaults.bool(forKey: "XArcana.demonUnlocked"))
+        state.restart(hasStarted: false)
+        XCTAssertTrue(state.snapshot.demonUnlocked)
+        XCTAssertFalse(state.snapshot.hasWon)
+        XCTAssertFalse(state.snapshot.isGameOver)
+        XCTAssertFalse(state.snapshot.hasStarted)
+        XCTAssertEqual(state.snapshot.wave, 1)
+        XCTAssertEqual(state.snapshot.health, 100)
+        XCTAssertEqual(state.snapshot.mana, 100)
+        XCTAssertEqual(state.snapshot.score, 0)
+        state.clearRecords()
+        XCTAssertEqual(state.snapshot.bestScore, 0)
+        XCTAssertEqual(state.snapshot.bestWave, 0)
+        XCTAssertTrue(state.snapshot.demonUnlocked)
+        XCTAssertTrue(defaults.bool(forKey: "XArcana.demonUnlocked"))
+        let restored = SurvivalState(defaults: defaults)
+        XCTAssertTrue(restored.snapshot.demonUnlocked)
+        XCTAssertFalse(restored.snapshot.hasWon)
+        XCTAssertEqual(restored.snapshot.bestScore, 0)
+        XCTAssertEqual(restored.snapshot.bestWave, 0)
+    }
+
+    func testOrdinaryKillsStageClearsAndLossDoNotUnlockDemon() {
+        let state = SurvivalState(defaults: nil)
+        for _ in 1..<10 {
+            for _ in 0..<8 { state.recordKill() }
+            state.clearWave()
+            state.nextWave()
+        }
+        XCTAssertEqual(state.snapshot.wave, 10)
+        XCTAssertFalse(state.snapshot.demonUnlocked)
+        state.damage(Double(state.snapshot.maxHealth))
+        XCTAssertTrue(state.snapshot.isGameOver)
+        XCTAssertFalse(state.snapshot.hasWon)
+        XCTAssertFalse(state.snapshot.demonUnlocked)
+        state.recordBossDefeat()
+        XCTAssertFalse(state.snapshot.demonUnlocked)
+        state.restart()
+        XCTAssertFalse(state.snapshot.demonUnlocked)
+    }
+
     func testNyanCounterCapsAtTwentyAndEveryCastRequiresTwentyNewKills() {
         let state = SurvivalState(defaults: nil)
         for _ in 0..<19 { state.recordKill() }
@@ -1331,6 +1592,8 @@ final class SurvivalStateTests: XCTestCase {
         XCTAssertEqual(snapshot.countdownRemaining, 0)
         XCTAssertEqual(snapshot.nyanRemaining, 0)
         XCTAssertEqual(snapshot.nyanKillsSinceCast, 0)
+        XCTAssertFalse(snapshot.demonUnlocked)
+        XCTAssertFalse(snapshot.hasWon)
         XCTAssertEqual(try JSONDecoder().decode(RunSnapshot.self, from: JSONEncoder().encode(snapshot)), snapshot)
     }
 
@@ -1463,6 +1726,29 @@ final class StageHUDTests: XCTestCase {
         XCTAssertEqual(score.text, "1450 pts · 12 defeated · Nyan 0/20")
         XCTAssertFalse(labels.contains { $0.text?.contains("XP") == true })
         XCTAssertEqual(hud.subviews.compactMap { $0 as? UIProgressView }.count, 2)
+    }
+
+    func testBossVictoryShowsVictoryAndPermanentStarUnlock() throws {
+        var run = RunSnapshot()
+        run.isGameOver = true
+        run.hasWon = true
+        run.demonUnlocked = true
+        run.wave = 10
+        run.bestWave = 10
+        let view = RunOverView(frame: CGRect(x: 0, y: 0, width: 600, height: 500))
+        view.show(run)
+        let stack = try XCTUnwrap(view.subviews.first as? UIStackView)
+        let labels = stack.arrangedSubviews.compactMap { $0 as? UILabel }
+        XCTAssertFalse(view.isHidden)
+        XCTAssertTrue(labels.contains { $0.attributedText?.string == "VICTORY" })
+        let results = try XCTUnwrap(labels.first { $0.accessibilityIdentifier == "runResults" })
+        XCTAssertTrue(results.text?.contains("Demon defeated") == true)
+        XCTAssertTrue(results.text?.contains("Star summon unlocked") == true)
+        XCTAssertTrue(results.text?.contains("Best cleared level 10") == true)
+        run.hasWon = false
+        view.show(run)
+        XCTAssertTrue(labels.contains { $0.attributedText?.string == "YOU DIED" })
+        XCTAssertFalse(results.text?.contains("Star summon unlocked") == true)
     }
 
     func testGameOverShowsStageAndBestClearedLevel() throws {
