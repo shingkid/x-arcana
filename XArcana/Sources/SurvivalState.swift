@@ -158,18 +158,14 @@ final class SurvivalState {
         saveRecords()
     }
 
-    /// Only the authoritative boss death calls this; repeats cannot award another victory.
+    /// Combat calls this once per defeated king after its health reaches zero.
     func recordBossDefeat() {
-        guard snapshot.hasStarted, snapshot.countdownRemaining <= 0, snapshot.wave == 10,
+        guard snapshot.hasStarted, snapshot.countdownRemaining <= 0, snapshot.wave >= 10,
             !snapshot.isGameOver
         else { return }
         snapshot.demonUnlocked = true
         defaults?.set(true, forKey: "XArcana.demonUnlocked")
-        snapshot.score += 1_250
-        snapshot.bestWave = max(snapshot.bestWave, 10)
-        snapshot.nyanRemaining = 0
-        snapshot.hasWon = true
-        snapshot.isGameOver = true
+        snapshot.score += 1_000
         saveRecords()
     }
 

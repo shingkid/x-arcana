@@ -1192,7 +1192,7 @@ final class CombatTests: XCTestCase {
         XCTAssertNotNil(alan.parent)
     }
 
-    func testFinalStageSpawnsOneThirtyHealthDemonWithoutZombiesOrNyan() throws {
+    func testLevelTenSpawnsOneThirtyHealthDemonWithoutZombiesOrNyan() throws {
         let state = finalBossState()
         for _ in 0..<20 { state.recordKill() }
         let (scene, combat) = makeEncounter(cameraHeight: 6, state: state)
@@ -1221,7 +1221,7 @@ final class CombatTests: XCTestCase {
         XCTAssertEqual(combat.pendingSpawns, 0)
     }
 
-    func testBossRequiresThirtyOneDamageArrowsAndAwardsOneVictoryWithoutNextStage() throws {
+    func testBossRequiresThirtyOneDamageArrowsThenLevelElevenStartsAfterTheNormalBreak() throws {
         let (scene, combat) = makeEncounter(cameraHeight: 6, state: finalBossState())
         let boss = try XCTUnwrap(combatants(in: scene).first)
         var events: [Combat.Event] = []
@@ -1233,27 +1233,197 @@ final class CombatTests: XCTestCase {
             time = advance(combat, from: time, seconds: 0.6)
             XCTAssertEqual(boss.health, max(0, 30 - Double(hit)), accuracy: 1e-10)
             XCTAssertEqual(boss.isDefeated, hit == 30)
+            XCTAssertFalse(combat.runSnapshot.hasWon)
+            XCTAssertFalse(combat.runSnapshot.isGameOver)
+            XCTAssertEqual(combat.kills, 0)
             if hit < 30 {
-                XCTAssertFalse(combat.runSnapshot.hasWon)
                 XCTAssertFalse(combat.runSnapshot.demonUnlocked)
-                XCTAssertEqual(combat.kills, 0)
                 XCTAssertFalse(boss.healthBar.isHidden)
             }
         }
-        let victory = combat.runSnapshot
-        XCTAssertTrue(victory.isGameOver)
-        XCTAssertTrue(victory.hasWon)
-        XCTAssertTrue(victory.demonUnlocked)
-        XCTAssertEqual(victory.score, 1_250)
-        XCTAssertEqual(victory.bestWave, 10)
+        let cleared = combat.runSnapshot
+        XCTAssertTrue(cleared.demonUnlocked)
+        XCTAssertEqual(cleared.score, 1_250)
+        XCTAssertEqual(cleared.bestWave, 10)
+        XCTAssertEqual(cleared.nyanKillsSinceCast, 0)
         XCTAssertTrue(boss.healthBar.isHidden)
-        XCTAssertFalse(combat.shoot(toward: center(boss)))
-        XCTAssertFalse(combat.cast(toward: center(boss)))
-        _ = advance(combat, from: time, seconds: Combat.waveBreakDuration + 60)
-        XCTAssertEqual(combat.runSnapshot, victory)
+        XCTAssertEqual(events.filter { $0 == .demonUnlocked }.count, 1)
+        XCTAssertEqual(events.filter { $0 == .waveCleared(10) }.count, 1)
+        time = advance(combat, from: time, seconds: Combat.waveBreakDuration - 1)
         XCTAssertEqual(combat.wave, 10)
         XCTAssertEqual(combat.remaining, 0)
-        XCTAssertFalse(events.contains(.waveStarted(11)))
+        XCTAssertEqual(combat.runSnapshot.score, cleared.score, "A dead boss cannot award points twice")
+        time = advance(combat, from: time, seconds: 1.1)
+        XCTAssertEqual(combat.wave, 11)
+        XCTAssertEqual(combat.runSnapshot.maxHealth, 210)
+        XCTAssertEqual(combat.runSnapshot.health, 210)
+        XCTAssertEqual(combat.runSnapshot.maxMana, 210)
+        XCTAssertEqual(combat.runSnapshot.mana, 210)
+        XCTAssertEqual(combat.remainingDemonKings, 1)
+        XCTAssertEqual(combat.remainingZombies + combat.pendingZombieSpawns, 2)
+        XCTAssertEqual(events.filter { $0 == .waveStarted(11) }.count, 1)
+        XCTAssertEqual(events.filter { $0 == .demonUnlocked }.count, 1)
+    }
+
+    func testEndlessStageCompositionAddsZombiesAndOneKingEveryFiveLevels() {
+        let stages: [(level: Int, zombies: Int, kings: Int)] = [
+            (1, 8, 0), (9, 8, 0), (10, 0, 1), (11, 2, 1), (12, 4, 1),
+            (13, 6, 1), (14, 8, 1), (15, 8, 2), (19, 8, 2), (20, 8, 3),
+            (25, 8, 4), (30, 8, 5), (100, 8, 19),
+        ]
+        for stage in stages {
+            let composition = Combat.stageComposition(for: stage.level)
+            XCTAssertEqual(composition.zombies, stage.zombies, "Level \(stage.level)")
+            XCTAssertEqual(composition.demonKings, stage.kings, "Level \(stage.level)")
+        }
+    }
+
+    func testKingsArriveFourSecondsApartAndExtraKingsWaitForAnActiveSlot() throws {
+        let (scene, combat) = makeEncounter(cameraHeight: 6, state: stageState(level: 25))
+        XCTAssertEqual(Combat.maxActiveDemonKings, 3)
+        XCTAssertEqual(Combat.maxActiveZombies, 8)
+        XCTAssertEqual(Combat.demonKingSpawnInterval, 4)
+        XCTAssertEqual(combat.remainingDemonKings, 1)
+        XCTAssertEqual(combat.pendingDemonKingSpawns, 3)
+        var time = advance(combat, from: 0, seconds: 3.9)
+        XCTAssertEqual(combat.remainingDemonKings, 1)
+        time = advance(combat, from: time, seconds: 0.2)
+        XCTAssertEqual(combat.remainingDemonKings, 2)
+        time = advance(combat, from: time, seconds: 3.8)
+        XCTAssertEqual(combat.remainingDemonKings, 2)
+        time = advance(combat, from: time, seconds: 0.2)
+        XCTAssertEqual(combat.remainingDemonKings, 3)
+        time = advance(combat, from: time, seconds: 20)
+        XCTAssertEqual(combat.remainingDemonKings, 3)
+        XCTAssertEqual(combat.pendingDemonKingSpawns, 1)
+        XCTAssertEqual(combat.remainingZombies, 8)
+        XCTAssertEqual(combat.pendingZombieSpawns, 0)
+        let kings = combatants(in: scene).filter { $0.kind == .demonBoss }
+        XCTAssertEqual(Set(kings.map(\.identityID)).count, 3)
+        XCTAssertEqual(Set(kings.map(\.name)).count, 3)
+        XCTAssertTrue(kings.allSatisfy { $0.health == 30 && !$0.isDefeated })
+        let defeated = try XCTUnwrap(kings.first)
+        time = defeatBoss(defeated, in: scene, combat: combat, from: time)
+        time = advance(combat, from: time, seconds: 4.1)
+        XCTAssertEqual(combat.remainingDemonKings, 3)
+        XCTAssertEqual(combat.pendingDemonKingSpawns, 0)
+        XCTAssertEqual(combat.runSnapshot.score, 1_000)
+        XCTAssertEqual(combat.runSnapshot.kills, 0)
+        XCTAssertFalse(combat.runSnapshot.isGameOver)
+    }
+
+    func testMixedStageDoesNotClearUntilBothTheBossAndQueuedZombiesAreDefeated() throws {
+        let state = stageState(level: 11)
+        for _ in 0..<20 { state.recordKill() }
+        let (scene, combat) = makeEncounter(cameraHeight: 6, state: state)
+        var events: [Combat.Event] = []
+        combat.onEvent = { events.append($0) }
+        XCTAssertTrue(combat.nyan())
+        let boss = try XCTUnwrap(combatants(in: scene).first { $0.kind == .demonBoss })
+        var time = defeatBoss(boss, in: scene, combat: combat, from: 0)
+        XCTAssertEqual(combat.runSnapshot.score, 3_000)
+        XCTAssertEqual(combat.runSnapshot.kills, 20)
+        XCTAssertEqual(combat.runSnapshot.nyanKillsSinceCast, 0)
+        XCTAssertTrue(combat.runSnapshot.demonUnlocked)
+        XCTAssertFalse(events.contains(.waveCleared(11)))
+        XCTAssertFalse(combat.runSnapshot.isGameOver)
+        time = advance(combat, from: time, seconds: SurvivalState.nyanDuration - time + 0.1)
+        XCTAssertEqual(combat.remaining, 0)
+        XCTAssertEqual(combat.pendingZombieSpawns, 1)
+        XCTAssertEqual(combat.runSnapshot.score, 3_100)
+        XCTAssertFalse(events.contains(.waveCleared(11)), "The queued zombie must prevent an early clear")
+        time = advance(combat, from: time, seconds: Combat.spawnInterval(for: 11) + 0.1)
+        let zombie = try XCTUnwrap(combatants(in: scene).first { $0.kind == .zombie && !$0.isDefeated })
+        for _ in 0..<2 {
+            positionForArrow(zombie, in: scene)
+            XCTAssertTrue(combat.shoot(toward: center(zombie)))
+            time = advance(combat, from: time, seconds: 0.6)
+        }
+        XCTAssertEqual(combat.remaining, 0)
+        XCTAssertEqual(combat.pendingSpawns, 0)
+        XCTAssertEqual(combat.runSnapshot.score, 3_450)
+        XCTAssertEqual(combat.kills, 22)
+        XCTAssertEqual(combat.runSnapshot.nyanKillsSinceCast, 2)
+        XCTAssertEqual(events.filter { $0 == .waveCleared(11) }.count, 1)
+        XCTAssertEqual(events.filter { $0 == .demonUnlocked }.count, 1)
+        _ = advance(combat, from: time, seconds: 1)
+        XCTAssertEqual(combat.runSnapshot.score, 3_450)
+        XCTAssertEqual(combat.wave, 11)
+    }
+
+    func testNyanTransformsOnlyZombiesWhileKingsKeepAttackingAndArriving() throws {
+        let state = stageState(level: 20)
+        for _ in 0..<20 { state.recordKill() }
+        let (scene, combat) = makeEncounter(state: state)
+        var time = advance(combat, from: 0, seconds: 4.1)
+        let kings = combatants(in: scene).filter { $0.kind == .demonBoss }
+        let zombies = combatants(in: scene).filter { $0.kind == .zombie }
+        XCTAssertEqual(kings.count, 2)
+        XCTAssertFalse(zombies.isEmpty)
+        XCTAssertEqual(combat.pendingDemonKingSpawns, 1)
+        let queuedZombies = combat.pendingZombieSpawns
+        let attacks = kings.map(\.bossAttackCount).reduce(0, +)
+        XCTAssertTrue(combat.nyan())
+        XCTAssertTrue(zombies.allSatisfy(\.isTransfigured))
+        XCTAssertTrue(kings.allSatisfy { !$0.isTransfigured && $0.health == 30 })
+        time = advance(combat, from: time, seconds: 10)
+        XCTAssertEqual(combat.pendingDemonKingSpawns, 0)
+        XCTAssertEqual(combat.pendingZombieSpawns, queuedZombies)
+        XCTAssertEqual(combat.remainingDemonKings, 3)
+        XCTAssertTrue(combatants(in: scene).filter { $0.kind == .demonBoss }.allSatisfy { !$0.isTransfigured })
+        XCTAssertGreaterThan(kings.map(\.bossAttackCount).reduce(0, +), attacks)
+        XCTAssertLessThan(combat.runSnapshot.health, Double(combat.runSnapshot.maxHealth))
+        XCTAssertTrue(kings.allSatisfy { !$0.isTransfigured && !$0.isDefeated })
+        XCTAssertFalse(combat.runSnapshot.isGameOver)
+        _ = advance(combat, from: time, seconds: SurvivalState.nyanDuration - 10 + 0.1)
+        XCTAssertTrue(zombies.allSatisfy(\.isDefeated))
+        XCTAssertTrue(kings.allSatisfy { !$0.isTransfigured && !$0.isDefeated })
+        XCTAssertEqual(combat.pendingDemonKingSpawns, 0)
+        XCTAssertEqual(combat.pendingZombieSpawns, queuedZombies)
+        XCTAssertEqual(combat.wave, 20)
+        XCTAssertFalse(combat.runSnapshot.hasWon)
+    }
+
+    func testOneKingDeathPreservesOtherKingSlowAllyProjectilesAndActiveCombat() throws {
+        let (scene, combat) = makeEncounter(cameraHeight: 6, state: stageState(level: 15))
+        let first = try XCTUnwrap(combatants(in: scene).first { $0.kind == .demonBoss })
+        var time = 0.0
+        for _ in 0..<26 {
+            positionForArrow(first, in: scene)
+            XCTAssertTrue(combat.shoot(toward: center(first)))
+            time = advance(combat, from: time, seconds: 0.6)
+        }
+        let second = try XCTUnwrap(combatants(in: scene).first { $0.kind == .demonBoss && $0 !== first })
+        positionForArrow(first, in: scene)
+        first.simdPosition = SIMD3(-0.5, 1.5, 2.5)
+        second.simdPosition = SIMD3(0.5, 1.5, 2.5)
+        XCTAssertTrue(combat.ice(toward: center(first)))
+        XCTAssertEqual(first.health, 2)
+        XCTAssertEqual(second.health, 28)
+        XCTAssertGreaterThan(second.slowRemaining, 0)
+        let ally = SCNNode()
+        ally.simdPosition = SIMD3(2, 10, 4.8)
+        XCTAssertEqual(combat.summon(kind: .alan) { ally }, .summoned)
+        time = advance(combat, from: time, seconds: 0.3)
+        XCTAssertTrue(combat.shoot(toward: SIMD3(0, 6, -5)))
+        time = advance(combat, from: time, seconds: 0.52)
+        let projectile = try XCTUnwrap(scene.rootNode.childNode(withName: "Flying arrow", recursively: true))
+        second.simdPosition = SIMD3(-2, 1.5, -4)
+        first.simdPosition = SIMD3(-0.5, 1.5, 2.5)
+        XCTAssertTrue(combat.ice(toward: center(first)))
+        XCTAssertTrue(first.isDefeated)
+        XCTAssertFalse(second.isDefeated)
+        XCTAssertEqual(second.health, 28)
+        XCTAssertGreaterThan(second.slowRemaining, 0)
+        XCTAssertNotNil(ally.parent)
+        XCTAssertNotNil(projectile.parent)
+        XCTAssertEqual(combat.remainingDemonKings, 1)
+        XCTAssertEqual(combat.runSnapshot.score, 1_000)
+        XCTAssertFalse(combat.runSnapshot.isGameOver)
+        XCTAssertFalse(try XCTUnwrap(scene.rootNode.childNode(withName: "Undead horde", recursively: false)).isPaused)
+        XCTAssertFalse(combat.cast(toward: center(second)), "The ice cooldown still applies after a king dies")
+        _ = advance(combat, from: time, seconds: 0.3)
+        XCTAssertTrue(combat.shoot(toward: center(second)))
     }
 
     func testFlyingBossTelegraphsItsAttacksAndDealsTheDeclaredDamage() throws {
@@ -1316,10 +1486,33 @@ final class CombatTests: XCTestCase {
         XCTAssertFalse(combat.runSnapshot.demonUnlocked)
     }
 
-    private func finalBossState() -> SurvivalState {
+    private func stageState(level: Int) -> SurvivalState {
         let state = SurvivalState(defaults: nil)
-        for _ in 1..<10 { state.nextWave() }
+        for _ in 1..<level { state.nextWave() }
         return state
+    }
+
+    private func finalBossState() -> SurvivalState { stageState(level: 10) }
+
+    private func positionForArrow(_ target: Combat.CombatantNode, in scene: SCNScene) {
+        for enemy in combatants(in: scene) where enemy !== target && !enemy.isDefeated {
+            enemy.simdPosition = SIMD3(-2, enemy.kind == .demonBoss ? 1.5 : 0, -4)
+        }
+        target.simdPosition = SIMD3(0, target.kind == .demonBoss ? 1.5 : 0, 1.5)
+    }
+
+    @discardableResult
+    private func defeatBoss(
+        _ boss: Combat.CombatantNode, in scene: SCNScene, combat: Combat, from start: Double
+    ) -> Double {
+        var time = start
+        for _ in 0..<30 {
+            positionForArrow(boss, in: scene)
+            XCTAssertTrue(combat.shoot(toward: center(boss)))
+            time = advance(combat, from: time, seconds: 0.6)
+        }
+        XCTAssertTrue(boss.isDefeated)
+        return time
     }
 
     private func unlockedDemonState() -> SurvivalState {
@@ -1373,26 +1566,37 @@ final class CombatTests: XCTestCase {
 }
 
 final class SurvivalStateTests: XCTestCase {
-    func testBossVictoryUnlocksDemonAndAwardsTheFinalStageOnce() throws {
+    func testBossDefeatsAwardOneThousandEachWithoutZombieChargeOrEndingTheRun() throws {
         let state = SurvivalState(defaults: nil)
         for _ in 1..<10 { state.nextWave() }
-        state.recordKill()
+        for _ in 0..<20 { state.recordKill() }
+        XCTAssertTrue(state.activateNyan(manaCost: 0))
         state.recordBossDefeat()
-        let victory = state.snapshot
-        XCTAssertTrue(victory.demonUnlocked)
-        XCTAssertTrue(victory.hasWon)
-        XCTAssertTrue(victory.isGameOver)
-        XCTAssertEqual(victory.score, 1_350)
-        XCTAssertEqual(victory.bestScore, 1_350)
-        XCTAssertEqual(victory.bestWave, 10)
+        XCTAssertTrue(state.snapshot.demonUnlocked)
+        XCTAssertFalse(state.snapshot.hasWon)
+        XCTAssertFalse(state.snapshot.isGameOver)
+        XCTAssertEqual(state.snapshot.score, 3_000)
+        XCTAssertEqual(state.snapshot.kills, 20)
+        XCTAssertEqual(state.snapshot.nyanKillsSinceCast, 0)
+        XCTAssertEqual(state.snapshot.nyanRemaining, SurvivalState.nyanDuration)
         state.recordBossDefeat()
-        state.recordKill()
+        XCTAssertEqual(state.snapshot.score, 4_000)
+        XCTAssertEqual(state.snapshot.kills, 20)
+        XCTAssertEqual(state.snapshot.nyanKillsSinceCast, 0)
         state.clearWave()
+        XCTAssertEqual(state.snapshot.score, 4_250)
+        XCTAssertEqual(state.snapshot.bestScore, 4_250)
+        XCTAssertEqual(state.snapshot.bestWave, 10)
         state.nextWave()
-        state.damage(1_000)
-        state.update(deltaTime: 100)
-        XCTAssertEqual(state.snapshot, victory)
-        XCTAssertEqual(try JSONDecoder().decode(RunSnapshot.self, from: JSONEncoder().encode(victory)), victory)
+        XCTAssertEqual(state.snapshot.wave, 11)
+        XCTAssertEqual(state.snapshot.maxHealth, 210)
+        XCTAssertEqual(state.snapshot.health, 210)
+        XCTAssertEqual(state.snapshot.maxMana, 210)
+        XCTAssertEqual(state.snapshot.mana, 210)
+        XCTAssertFalse(state.snapshot.hasWon)
+        XCTAssertFalse(state.snapshot.isGameOver)
+        XCTAssertEqual(
+            try JSONDecoder().decode(RunSnapshot.self, from: JSONEncoder().encode(state.snapshot)), state.snapshot)
     }
 
     func testDemonUnlockPersistsAcrossRestartScoreResetAndNewState() throws {

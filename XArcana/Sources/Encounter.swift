@@ -60,7 +60,7 @@ final class Encounter: NSObject {
     private(set) var fightingMode: WandPresentation.Mode = .wand
     private(set) var setupStep = "world"
     var battleStatus: String {
-        "\(fightingMode == .wand ? "Wand" : "Bow") · \(combat.remaining) zombies · \(combat.kills) defeated"
+        "\(fightingMode == .wand ? "Wand" : "Bow") · \(combat.summary)"
     }
     private var spell = Spell()
     var isHolding: Bool { spell.isHolding || bowHeld }
@@ -318,14 +318,19 @@ final class Encounter: NSObject {
             case .waveCleared(let wave):
                 self.stage.announce(
                     title: "Level \(wave) cleared!", detail: "+250 bonus score · Next level in 20 seconds")
+            case .demonUnlocked:
+                self.stage.announce(title: "Demon summon unlocked", detail: "Draw a star · 20 MP/s · Up to 5 seconds")
             case .bossPreparing(let attack):
                 let action = attack == .breath ? "fire breath" : (attack == .slam ? "a ground slam" : "claw strikes")
                 self.setStatus("Demon King is preparing \(action)!")
             case .waveStarted(let wave):
                 self.stage.announce(
-                    title: wave == 10 ? "Final boss · Demon" : "Level \(wave)",
+                    title: wave == 10 ? "Level 10 · Demon King" : "Level \(wave)",
                     detail: wave == 10
-                        ? "Defeat him to unlock the star summon" : "Survive the horde · Health and mana full")
+                        ? "Defeat him to unlock the star summon"
+                        : (wave > 10
+                            ? "Clear every king and zombie · Health and mana full"
+                            : "Survive the horde · Health and mana full"))
             }
         }
         combat.setPaused(!simulationActive)

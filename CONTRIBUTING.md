@@ -44,7 +44,8 @@ They do not erase a player's saved records.
 Run `Tools/build.sh performance` alone with its test window visible.
 The benchmark uses 1080p rendering, a warmup period, and timed samples with eight enemies and overlapping spell effects.
 Inspect measured scenarios and skips before describing performance as verified.
-To rerun only a changed workload, set `XARCANA_BENCHMARK_SCENARIO` to `alan-albert`, `demon-breath`, or `transfiguration`.
+To rerun only a changed workload, set `XARCANA_BENCHMARK_SCENARIO` to `alan-albert`, `demon-breath`, `transfiguration`, or `mixed-stage`.
+The mixed-stage scenario measures the actual three-king and eight-zombie simulation with overlapping player effects.
 The old-asset comparison is optional and needs a separate baseline app bundle.
 It does not compare the complete previous runtime.
 Investigate sustained frame rates below 55 FPS in the 60-FPS mode.

@@ -15,6 +15,9 @@ final class RenderPerformanceTests: XCTestCase {
         guard ProcessInfo.processInfo.environment["XARCANA_RENDER_BENCHMARK"] == "1" else {
             throw XCTSkip("Set XARCANA_RENDER_BENCHMARK=1 to run the visible-window render benchmark")
         }
+        if ProcessInfo.processInfo.environment["XARCANA_BENCHMARK_SCENARIO"] == "mixed-stage" {
+            throw XCTSkip("The mixed-stage workload runs in its dedicated benchmark")
+        }
         #if !targetEnvironment(macCatalyst)
             throw XCTSkip("This comparison requires a foreground Mac Catalyst test host")
         #else
@@ -202,6 +205,95 @@ final class RenderPerformanceTests: XCTestCase {
         #endif
     }
 
+    @MainActor
+    func testVisibleMixedStageFrameTimes() async throws {
+        guard ProcessInfo.processInfo.environment["XARCANA_RENDER_BENCHMARK"] == "1",
+            ProcessInfo.processInfo.environment["XARCANA_BENCHMARK_SCENARIO"] == "mixed-stage"
+        else {
+            throw XCTSkip("Select the mixed-stage render benchmark")
+        }
+        #if targetEnvironment(macCatalyst)
+            let windowScene = try XCTUnwrap(
+                UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first {
+                    $0.activationState == .foregroundActive
+                })
+            let prior = windowScene.windows.first { $0.isKeyWindow }
+            let window = UIWindow(windowScene: windowScene)
+            window.frame = CGRect(x: 0, y: 0, width: 1280, height: 720)
+            let controller = UIViewController()
+            window.rootViewController = controller
+            window.makeKeyAndVisible()
+            defer {
+                window.isHidden = true
+                prior?.makeKey()
+            }
+            let room = GameWorld()
+            room.camera.simdPosition = SIMD3(0, 3, 5)
+            room.camera.simdLook(at: SIMD3(0, 1.8, 0))
+            let stage = GameStage(room: room)
+            stage.external = true
+            stage.setFrameRate(60)
+            stage.frame = controller.view.bounds
+            stage.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            controller.view.addSubview(stage)
+            controller.view.layoutIfNeeded()
+            let view = try XCTUnwrap(stage.subviews.compactMap { $0 as? SCNView }.first)
+            let state = SurvivalState(defaults: nil)
+            for _ in 1..<20 { state.nextWave() }
+            let combat = Combat(scene: room.scene, camera: room.camera, environment: room.environment, state: state)
+            combat.update(at: 0)
+            for frame in 1...960 { combat.update(at: Double(frame) / 60) }
+            XCTAssertEqual(combat.remainingDemonKings, 3)
+            XCTAssertEqual(combat.remainingZombies, 8)
+            let templates =
+                ZombieAppearance.prewarm(identities: Combat.identities) + RuneEffects.prewarm() + SpellVFX.prewarm()
+            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                stage.prepare(nodes: templates) { continuation.resume() }
+            }
+            let performance = ScenePerformance(scene: room.scene, camera: room.camera)
+            performance.prepare()
+            let oldDelegate = view.delegate
+            let samples = RenderSamples(previous: oldDelegate)
+            view.delegate = samples
+            let driver = MixedStageDriver(combat: combat, room: room, performance: performance)
+            driver.start()
+            defer {
+                driver.stop()
+                view.delegate = oldDelegate
+            }
+            try await Task.sleep(nanoseconds: 5_000_000_000)
+            samples.begin()
+            try await Task.sleep(nanoseconds: 15_000_000_000)
+            let result = samples.finish()
+            let report: [String: Any] = [
+                "scenario": "mixed-stage", "fps": result.fps, "p95FrameMilliseconds": result.p95 * 1000,
+                "frames": result.frames, "seconds": result.seconds, "activeKings": combat.remainingDemonKings,
+                "activeZombies": combat.remainingZombies, "playerHealth": combat.runSnapshot.health,
+                "drawableWidth": Double(view.bounds.width * view.contentScaleFactor),
+                "drawableHeight": Double(view.bounds.height * view.contentScaleFactor),
+                "playerImpactBursts": driver.impactBursts,
+            ]
+            print("XARCANA_MIXED_STAGE_BENCHMARK", report)
+            let attachment = XCTAttachment(
+                data: try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys]),
+                uniformTypeIdentifier: "public.json")
+            attachment.name = "Mixed stage performance"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+            let screenshot = XCTAttachment(image: view.snapshot())
+            screenshot.name = "Three kings and eight zombies"
+            screenshot.lifetime = .keepAlways
+            add(screenshot)
+            XCTAssertFalse(combat.runSnapshot.isGameOver)
+            XCTAssertEqual(combat.remainingDemonKings, 3)
+            XCTAssertEqual(combat.remainingZombies, 8)
+            XCTAssertGreaterThan(result.frames, 30)
+            XCTAssertGreaterThanOrEqual(result.fps, 55, "Investigate sustained frame rate below55FPS")
+        #else
+            throw XCTSkip("Mixed stage benchmark requires Mac Catalyst")
+        #endif
+    }
+
     private func asset(_ name: String, directory: String, bundle: Bundle) throws -> SCNNode {
         let url = try XCTUnwrap(bundle.url(forResource: name, withExtension: "usdz", subdirectory: directory))
         if let cached = baselineAssets[url.path] { return cached.clone() }
@@ -374,5 +466,45 @@ private final class RenderSamples: NSObject, SCNSceneRendererDelegate {
         _ = registry.update(deltaTime: dt, targets: targets)
         if !wasBreathing, registry.companions.first?.attack?.style == .breath { breathStarts += 1 }
         performance.update(at: link.timestamp)
+    }
+}
+
+@MainActor private final class MixedStageDriver: NSObject {
+    private let combat: Combat
+    private let room: GameWorld
+    private let performance: ScenePerformance
+    private var link: CADisplayLink?
+    private var previous: TimeInterval?
+    private var time: TimeInterval = 16
+    private var nextImpact: TimeInterval = 16
+    private(set) var impactBursts = 0
+    init(combat: Combat, room: GameWorld, performance: ScenePerformance) {
+        self.combat = combat
+        self.room = room
+        self.performance = performance
+    }
+    func start() {
+        let timer = CADisplayLink(target: self, selector: #selector(tick(_:)))
+        timer.add(to: .main, forMode: .common)
+        link = timer
+    }
+    func stop() {
+        link?.invalidate()
+        link = nil
+    }
+    @objc private func tick(_ timer: CADisplayLink) {
+        let dt = previous.map { max(0, min(0.05, timer.timestamp - $0)) } ?? 1 / 60
+        previous = timer.timestamp
+        time += dt
+        combat.update(at: time)
+        performance.update(at: timer.timestamp)
+        if time >= nextImpact {
+            nextImpact = time + 1
+            SpellVisuals.fireball(
+                at: SIMD3(0, 1.1, 0), radius: 3, floorY: room.environment.floorY, on: room.scene.rootNode)
+            SpellVisuals.lightning(at: SIMD3(-1, 1.1, 0), on: room.scene.rootNode)
+            SpellVisuals.ice(from: SIMD3(0, 1.4, 3), direction: SIMD3(0, 0, -1), on: room.scene.rootNode)
+            impactBursts += 1
+        }
     }
 }

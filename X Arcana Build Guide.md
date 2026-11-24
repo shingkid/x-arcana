@@ -155,7 +155,8 @@ Mana regeneration pauses while it is active.
 It disappears after five simulation seconds or when mana runs out.
 Nyan needs 20 zombie defeats before every cast, including the first, and still costs 80 MP.
 One living zombie becomes one cat; queued zombies do not produce extra cats.
-Spawning pauses during the 27-second curse, then resumes after the current level's spawn interval.
+Zombie spawning pauses during the 27-second curse, then resumes after the current level's spawn interval.
+King arrivals and attacks continue during the curse.
 Only transformed zombies disappear at the song boundary.
 The glasses show Nyan progress out of 20.
 The bow has a 0.5-second reload and uses tighter hitboxes and less aim assistance.
@@ -165,7 +166,7 @@ The two sections each represent 1 HP and one bow hit.
 Spell and ally damage also update the bars, including partial sections.
 Bars disappear on death and during Nyan transfiguration.
 
-## Level 10 final boss
+## Demon King and later levels
 
 Levels 1 to 9 contain zombie stages.
 Level 10 replaces the horde with one winged demon boss with 30 HP.
@@ -175,8 +176,28 @@ He flies slowly around the arena and signals attacks before contact.
 Each claw deals 4 damage, the ground slam deals 8, and fire breath deals 6.
 The boss has a continuous health bar and numeric HP above him.
 Arrows always deal 1 damage, including against the boss (30 hits from full health).
-Nyan cannot transform the boss.
-Defeating him ends the run in victory, awards 1,250 total boss and stage score, and permanently unlocks the star summon.
+Nyan transforms zombies only; kings remain hostile during the curse.
+The first king defeated permanently unlocks the star summon.
+Each king awards 1,000 score; clearing all live and queued enemies awards another 250.
+The run continues after level 10.
 Dying, reaching level 10, and drawing a star do not unlock it.
 Restart and Reset scores retain this unlock.
 After unlocking, the friendly demon keeps its 20 MP per second drain and five-second lifetime.
+
+| Level | Demon Kings | Zombies |
+| --- | ---: | ---: |
+| 10 | 1 | 0 |
+| 11 | 1 | 2 |
+| 12 | 1 | 4 |
+| 13 | 1 | 6 |
+| 14 | 1 | 8 |
+| 15 to 19 | 2 | 8 |
+| 20 to 24 | 3 | 8 |
+| 25 to 29 | 4 | 8 |
+
+Add one king every five levels after level 10.
+Up to three kings are active together; further kings wait in the spawn queue.
+King arrivals are at least four seconds apart, and the existing zombie spawn interval still applies.
+A level clears only after every live and queued enemy is defeated.
+The twenty-second break and full resource refill then lead into the next level.
+Each resource maximum increases by 10 again after level 10: level 11 starts at 210 HP and MP.

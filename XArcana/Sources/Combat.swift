@@ -7,6 +7,21 @@ final class Combat {
     static let zombieMaxHealth: Double = 2
     static let demonBossLevel = 10
     static let demonBossMaxHealth: Double = 30
+    static let maxActiveDemonKings = 3
+    static let maxActiveZombies = 8
+    static let demonKingSpawnInterval: TimeInterval = 4
+
+    struct StageComposition: Equatable {
+        let zombies: Int
+        let demonKings: Int
+    }
+
+    static func stageComposition(for level: Int) -> StageComposition {
+        guard level >= demonBossLevel else { return StageComposition(zombies: 8, demonKings: 0) }
+        return StageComposition(
+            zombies: min(8, max(0, level - demonBossLevel) * 2),
+            demonKings: 1 + (level - demonBossLevel) / 5)
+    }
     static let spawnInterval: TimeInterval = 8
     static func spawnInterval(for level: Int) -> TimeInterval {
         max(2, spawnInterval * pow(0.9, Double(max(0, level - 1))))
@@ -19,6 +34,7 @@ final class Combat {
         case waveCleared(Int)
         case waveStarted(Int)
         case bossPreparing(BossAttackStyle)
+        case demonUnlocked
     }
 
     struct Identity: Decodable {
@@ -71,7 +87,7 @@ final class Combat {
         func setHealth(_ value: Double) {
             health = value
             healthBar.show(health: health, maximum: maxHealth)
-            bossHealthText?.string = String(format: "Demon King · %.1f/30 HP", max(0, health))
+            bossHealthText?.string = String(format: "\(identityName) · %.1f/30 HP", max(0, health))
             if isTransfigured { healthBar.isHidden = true }
         }
     }
@@ -154,7 +170,9 @@ final class Combat {
     private var lastTime: TimeInterval?
     private var elapsed: TimeInterval = 0
     private var nextWave: TimeInterval?
-    private var spawnedThisWave = 0
+    private var spawnedZombiesThisWave = 0
+    private var spawnedDemonKingsThisWave = 0
+    private var nextDemonKingSpawn: TimeInterval = 0
     private var nextSpawn: TimeInterval = 0
     private var shotCooldown: TimeInterval = 0
     private var meleeCooldown: TimeInterval = 0
@@ -173,16 +191,28 @@ final class Combat {
     var onEvent: ((Event) -> Void)?
     var kills: Int { run.snapshot.kills }
     var wave: Int { run.snapshot.wave }
-    var isBossFight: Bool { wave == Self.demonBossLevel }
+    var isBossFight: Bool { wave >= Self.demonBossLevel }
     private(set) var blockedAttacks = 0
     var remaining: Int { enemies.filter { $0.health > 0 }.count }
-    var pendingSpawns: Int {
+    var remainingZombies: Int { enemies.filter { $0.health > 0 && $0.kind == .zombie }.count }
+    var remainingDemonKings: Int { enemies.filter { $0.health > 0 && $0.kind == .demonBoss }.count }
+    private var canSpawn: Bool {
         run.snapshot.hasStarted && run.snapshot.countdownRemaining <= 0 && !run.snapshot.isGameOver
-            ? max(0, (isBossFight ? 1 : 8) - spawnedThisWave) : 0
     }
+    var pendingZombieSpawns: Int {
+        canSpawn ? max(0, Self.stageComposition(for: wave).zombies - spawnedZombiesThisWave) : 0
+    }
+    var pendingDemonKingSpawns: Int {
+        canSpawn ? max(0, Self.stageComposition(for: wave).demonKings - spawnedDemonKingsThisWave) : 0
+    }
+    var pendingSpawns: Int { pendingZombieSpawns + pendingDemonKingSpawns }
     var onStatus: ((String) -> Void)?
     var summary: String {
-        isBossFight ? "Level 10 · Demon King · Final boss" : "Level \(wave) · \(remaining) zombies · \(kills) defeated"
+        if isBossFight {
+            return
+                "Level \(wave) · \(remainingDemonKings) Demon Kings · \(remainingZombies) zombies · \(pendingSpawns) arriving"
+        }
+        return "Level \(wave) · \(remainingZombies) zombies · \(kills) defeated"
     }
 
     convenience init(
@@ -228,7 +258,9 @@ final class Combat {
         projectiles.removeAll()
         shieldNode = nil
         run.restart(hasStarted: false)
-        spawnedThisWave = 0
+        spawnedZombiesThisWave = 0
+        spawnedDemonKingsThisWave = 0
+        nextDemonKingSpawn = 0
         countdownNotifyDelay = 0
         elapsed = 0
         nextWave = nil
@@ -274,11 +306,7 @@ final class Combat {
             lastRejection = .cooldown
             return false
         }
-        guard !isBossFight else {
-            lastRejection = .notReady
-            return false
-        }
-        guard remaining > 0, run.snapshot.nyanKillsSinceCast >= 20 else {
+        guard remainingZombies > 0, run.snapshot.nyanKillsSinceCast >= 20 else {
             lastRejection = .cooldown
             return false
         }
@@ -363,7 +391,16 @@ final class Combat {
             onStatus?("A new level has started. \(summary)")
             onChange?()
         }
-        if run.snapshot.nyanRemaining <= 0, pendingSpawns > 0, elapsed >= nextSpawn {
+        if pendingDemonKingSpawns > 0, remainingDemonKings < Self.maxActiveDemonKings,
+            elapsed >= nextDemonKingSpawn
+        {
+            spawnDemonBoss()
+            onStatus?(summary)
+            onChange?()
+        }
+        if run.snapshot.nyanRemaining <= 0, pendingZombieSpawns > 0,
+            remainingZombies < Self.maxActiveZombies, elapsed >= nextSpawn
+        {
             spawnNextZombie()
             onStatus?(summary)
             onChange?()
@@ -979,34 +1016,34 @@ final class Combat {
         node.runAction(.sequence([.wait(duration: 1.5), .removeFromParentNode()]))
     }
 
-    private func finishBossFight(_ enemy: Enemy) {
+    private func defeatDemonBoss(_ enemy: Enemy) {
         enemy.bossAttack = nil
         enemy.pendingMelee = nil
         enemy.velocity = .zero
         enemy.node.isDefeated = true
-        enemy.node.bossHealthText?.string = "Demon King defeated"
+        enemy.node.bossHealthText?.string = "\(enemy.identity.name) defeated"
         enemy.node.healthBar.isHidden = true
-        nextWave = nil
-        for projectile in projectiles { projectile.node.removeFromParentNode() }
-        projectiles.removeAll()
-        allies.reset()
-        shieldNode?.removeFromParentNode()
-        shieldNode = nil
         CharacterAnimation.stop(on: enemy.node)
         enemy.node.removeFromParentNode()
-        enemy.node.simdPosition.y = floorY
+        let wasUnlocked = run.snapshot.demonUnlocked
         run.recordBossDefeat()
-        freezeVisuals(true)
-        onStatus?("Victory! Demon King defeated. Demon summon unlocked.")
+        if !wasUnlocked, run.snapshot.demonUnlocked { onEvent?(.demonUnlocked) }
         onChange?()
+        if !clearStageIfComplete() {
+            onStatus?("\(enemy.identity.name) defeated. \(summary)")
+        }
     }
 
     private func spawnDemonBoss() {
-        let point = environment.enemySpawns[0].vector
+        guard pendingDemonKingSpawns > 0, remainingDemonKings < Self.maxActiveDemonKings else { return }
+        let index = spawnedDemonKingsThisWave
+        let point = environment.enemySpawns[index % environment.enemySpawns.count].vector
+        let identityID = "demon-boss-\(index + 1)"
+        let name = Self.stageComposition(for: wave).demonKings > 1 ? "Demon King \(index + 1)" : "Demon King"
         let node = CombatantNode()
-        node.name = "Enemy.demon-boss.demonBoss"
-        node.identityID = "demon-boss"
-        node.identityName = "Demon King"
+        node.name = "Enemy.\(identityID).demonBoss"
+        node.identityID = identityID
+        node.identityName = name
         node.kind = .demonBoss
         node.maxHealth = Self.demonBossMaxHealth
         node.categoryBitMask = 2
@@ -1030,7 +1067,7 @@ final class Combat {
         node.healthBar.simdPosition = SIMD3(0, 3.05, 0)
         node.healthBar.simdScale = SIMD3(2.6, 2.4, 1)
         node.addChildNode(node.healthBar)
-        let title = SCNText(string: "Demon King · 30/30 HP", extrusionDepth: 0)
+        let title = SCNText(string: "\(name) · 30/30 HP", extrusionDepth: 0)
         title.font = .systemFont(ofSize: 18, weight: .bold)
         title.flatness = 0.3
         title.materials = [material(.white, glowing: true)]
@@ -1049,12 +1086,13 @@ final class Combat {
         node.setHealth(Self.demonBossMaxHealth)
         node.simdPosition = point
         root.addChildNode(node)
-        let identity = Identity(id: "demon-boss", name: "Demon King", image: "")
-        let enemy = Enemy(node: node, identity: identity, kind: .demonBoss, index: 0)
+        let identity = Identity(id: identityID, name: name, image: "")
+        let enemy = Enemy(node: node, identity: identity, kind: .demonBoss, index: index)
         enemies.append(enemy)
-        spawnedThisWave = 1
+        spawnedDemonKingsThisWave += 1
+        nextDemonKingSpawn = elapsed + Self.demonKingSpawnInterval
         sampleBossFlight(enemy, attack: nil)
-        onStatus?("Final level. Defeat the Demon King!")
+        onStatus?("\(name) has arrived!")
     }
 
     private func updateProjectiles(dt: TimeInterval) {
@@ -1113,7 +1151,6 @@ final class Combat {
                     }
                 }
             }
-            // Boss victory removes every projectile, including this one.
             guard !run.snapshot.isGameOver else { return }
             if impact != nil || projectile.age > 4 || end.y < floorY || !environment.projectileBounds.contains(end) {
                 if impact == nil, projectile.blastRadius > 0 { explode(at: end, radius: projectile.blastRadius) }
@@ -1129,7 +1166,7 @@ final class Combat {
     private func damage(_ enemy: Enemy, amount: Double = 1) {
         guard !run.snapshot.isGameOver, enemy.health > 0, enemy.transfiguration == nil else { return }
         let residualHealth = max(0, enemy.health - amount)
-        // Three equal fractional arrow hits must not leave a floating-point sliver alive.
+        // Distributed fireball damage must not leave a floating-point sliver alive.
         enemy.health = residualHealth <= enemy.maxHealth * 1e-12 ? 0 : residualHealth
         enemy.node.setHealth(enemy.health)
         enemy.node.removeAction(forKey: "hit")
@@ -1140,7 +1177,7 @@ final class Combat {
         }
         enemy.node.opacity = 1
         if enemy.kind == .demonBoss {
-            finishBossFight(enemy)
+            defeatDemonBoss(enemy)
             return
         }
         run.recordKill()
@@ -1157,34 +1194,38 @@ final class Combat {
                 ]),
                 .wait(duration: 0.35), .fadeOut(duration: 0.7), .removeFromParentNode(),
             ]))
-        if remaining == 0, pendingSpawns == 0, nextWave == nil {
-            run.clearWave()
-            onEvent?(.waveCleared(wave))
-            onChange?()
-            nextWave = elapsed + Self.waveBreakDuration
-            onStatus?("Level cleared. The next level starts in twenty seconds.")
-        } else {
+        if !clearStageIfComplete() {
             onStatus?("\(enemy.identity.name)'s \(enemy.kind.rawValue) defeated. \(summary)")
         }
+    }
+
+    @discardableResult
+    private func clearStageIfComplete() -> Bool {
+        guard remaining == 0, pendingSpawns == 0, nextWave == nil, !run.snapshot.isGameOver else { return false }
+        run.clearWave()
+        nextWave = elapsed + Self.waveBreakDuration
+        onEvent?(.waveCleared(wave))
+        onChange?()
+        onStatus?("Level cleared. The next level starts in twenty seconds.")
+        return true
     }
 
     private func spawnWave() {
         for enemy in enemies { enemy.node.removeFromParentNode() }
         enemies.removeAll()
-        spawnedThisWave = 0
-        if isBossFight {
-            spawnDemonBoss()
-        } else {
-            spawnNextZombie()
-        }
+        spawnedZombiesThisWave = 0
+        spawnedDemonKingsThisWave = 0
+        nextDemonKingSpawn = 0
+        if pendingDemonKingSpawns > 0 { spawnDemonBoss() }
+        if pendingZombieSpawns > 0 { spawnNextZombie() }
         onEvent?(.waveStarted(wave))
     }
 
     private func spawnNextZombie() {
-        guard !isBossFight, pendingSpawns > 0 else { return }
+        guard pendingZombieSpawns > 0, remainingZombies < Self.maxActiveZombies else { return }
         let positions = environment.enemySpawns
         let roster = Self.identities.isEmpty ? [Identity(id: "unknown", name: "Lost soul", image: "")] : Self.identities
-        let index = spawnedThisWave
+        let index = spawnedZombiesThisWave
         let point = positions[index % positions.count]
         let kind: Kind = .zombie
         let identity = roster[((wave - 1) * positions.count + index) % roster.count]
@@ -1212,7 +1253,7 @@ final class Combat {
         let enemy = Enemy(node: node, identity: identity, kind: kind, index: index)
         enemies.append(enemy)
         if run.snapshot.nyanRemaining > 0 { transfigure(enemy) }
-        spawnedThisWave += 1
+        spawnedZombiesThisWave += 1
         nextSpawn = elapsed + Self.spawnInterval(for: wave)
     }
 
