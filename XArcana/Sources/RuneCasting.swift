@@ -41,6 +41,8 @@ struct RuneCasting {
 
     private var recognizedStroke: RuneKind? {
         if let measured = RuneRecognizer.recognize(measuredPoints) { return measured }
+        // Smoothing must not turn a retired W into an elemental spell.
+        if RuneRecognizer.isRetiredW(measuredPoints) { return nil }
         // Include the current tip without moving existing visible ink or waiting for release.
         var complete = points
         Self.append(position, to: &complete)
@@ -159,16 +161,16 @@ enum RuneRecognizer {
         guard points.count >= 2, points.allSatisfy({ $0.x.isFinite && $0.y.isFinite }),
             let bounds = LightningRune.bounds(points), max(bounds.width, bounds.height) <= 2.5
         else { return nil }
-        if points.count >= 4 {
-            if summon(points) { return .summon }
-            if circle(points) { return .fireball }
-        }
-        if doubleVee(points) { return .nyan }
+        if points.count >= 4, summon(points) { return .summon }
+        // Retired W strokes must reach the harmless unrecognized-stroke fallback.
+        if isRetiredW(points) { return nil }
+        // Check two straight arms before the forgiving open-loop test can accept a rounded V.
         if vee(points) { return .ice }
+        if points.count >= 4, circle(points) { return .fireball }
         return letterZ(points) || LightningRune.matches(points) ? .zap : nil
     }
 
-    private static func doubleVee(_ input: [CGPoint]) -> Bool {
+    static func isRetiredW(_ input: [CGPoint]) -> Bool {
         guard input.count >= 5, let bounds = LightningRune.bounds(input),
             bounds.width >= 0.045, bounds.height >= 0.04
         else { return false }

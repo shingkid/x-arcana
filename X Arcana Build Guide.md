@@ -90,8 +90,8 @@ Holding starts the drawing where the phone currently aims, without moving the wa
 | O, oval, or open circle | Fireball, 5 total damage shared across a 3-metre blast; nearer zombies take more | 15 |
 | V | Ice cone, 2 damage and a six-second slow | 15 |
 | Still hold for about one second, then release | 20 shield HP, lasting until absorbed; ten-second cooldown | 20 |
-| Star or **Demon** | Winged flying devil ally | 40 |
-| W or **Nyan** | 27-second rainbow curse that clears the current stage | 80 |
+| Star only | Winged devil for up to five seconds; disappears when mana runs out | 20 per second |
+| Say **nyan nyan** | 27-second curse on current zombies; requires 20 defeats per use | 80 |
 | **Albert** | Large ally with a body slam | 30 |
 | **Alan** | Ally with a badminton racket | 25 |
 | **Patronus** or **Expecto Patronum** | Curved run from the lower-right foreground, fifteen-second slow, then vanish | 30 |
@@ -109,18 +109,19 @@ The Nyan curse can coexist with physical allies.
 
 Start with 100 HP and 100 MP.
 Zombies have 2 HP and use melee attacks only.
-Swipes and bites each deal 1 damage.
+Swipes and bites each deal 1 damage at level 1, increasing by 0.5 each level.
 Wand strikes, arrows, and physical ally attacks deal 1 damage.
 Lightning, ice, and the devil's fire breath deal 2 damage.
 Fireball shares 5 damage across the blast with more damage near its centre.
 Fractional zombie health is retained after a blast.
 Shield HP absorbs incoming damage before player HP and does not expire with time.
 Casting an active shield again costs no mana and does not refill it.
-One zombie arrives every eight seconds, up to eight per stage.
+Spawns start eight seconds apart, up to eight per stage.
+Each level makes the interval 10% shorter, with a two-second minimum.
 Each kill earns 100 score.
 Clearing a stage earns 250 score and starts a twenty-second break.
 The next level begins when that break ends.
-Nyan immediately transforms the current stage's remaining slots into harmless cats.
+Nyan transforms only the living zombies on the field into harmless cats.
 Each cat wanders independently in random directions across the view, with a pixel-art body and rainbow trail.
 They disappear when the curse ends.
 
@@ -140,7 +141,20 @@ A disconnected controller pauses combat, regeneration, and status timers.
 - No head tracking: check the direct USB-C cable, helper process, and sensor status.
 - Dark AR: remove the light shield and distinguish the Mac output from the optical view through the lenses.
 - Unexpected mana refill: check whether a new stage has begun.
-- Difficult W: use two loose downward valleys or say **Nyan**.
+- Nyan: say **nyan nyan**; drawing W does not invoke it.
 - Missing asset: check the game's error message, environment configuration, and asset manifest.
 
 Use [architecture](docs/architecture.md), [adding spells](docs/adding-spells.md), and [environments](docs/environments.md) for development.
+
+## Revised summon and bow balance
+
+The demon is invoked only by drawing a star.
+It needs at least 20 MP to appear, has no upfront charge, and drains 20 MP per simulation second.
+Mana regeneration pauses while it is active.
+It disappears after five simulation seconds or when mana runs out.
+Nyan needs 20 zombie defeats before every cast, including the first, and still costs 80 MP.
+One living zombie becomes one cat; queued zombies do not produce extra cats.
+Spawning pauses during the 27-second curse, then resumes after the current level's spawn interval.
+Only transformed zombies disappear at the song boundary.
+The glasses show Nyan progress out of 20.
+The bow has a 0.4-second reload.

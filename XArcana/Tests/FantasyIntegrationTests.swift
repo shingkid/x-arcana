@@ -43,7 +43,7 @@ final class FantasyIntegrationTests: XCTestCase {
         var phrases = VoiceCommandParser()
         XCTAssertEqual(
             phrases.consume("Alan. Albert. Summon demon. Expecto Patronum. Lumos! Revelio!"),
-            [.summonAlan, .summonAlbert, .summonDemon, .summonPatronus, .lumos, .revelio])
+            [.summonAlan, .summonAlbert, .summonPatronus, .lumos, .revelio])
         XCTAssertTrue(phrases.consume("Alan. Albert. Summon demon. Expecto Patronum. Lumos! Revelio!").isEmpty)
     }
 

@@ -56,10 +56,10 @@ final class RunHUD: UIView {
     }
 
     func show(_ run: RunSnapshot) {
-        health.text = "HP  \(run.health) / \(run.maxHealth)"
+        health.text = "HP  \(run.health.formatted(.number.precision(.fractionLength(0...1)))) / \(run.maxHealth)"
         let shield: String
         if let health = run.shieldHealth, health > 0 {
-            shield = " · Shield \(health) HP"
+            shield = " · Shield \(health.formatted(.number.precision(.fractionLength(0...1)))) HP"
         } else if run.shieldHealth == nil, run.shieldRemaining > 0 {
             shield = " · Shield \(Int(ceil(run.shieldRemaining)))s"
         } else {
@@ -69,10 +69,11 @@ final class RunHUD: UIView {
         }
         mana.text = "MANA  \(Int(run.mana.rounded(.down))) / \(Int(run.maxMana))\(shield)"
         progress.text = "Level \(run.wave)  ·  Best cleared \(run.bestWave)"
-        score.text = "\(run.score) pts  ·  \(run.kills) defeated"
+        score.text = "\(run.score) pts · \(run.kills) defeated · Nyan \(run.nyanKillsSinceCast)/20"
         healthBar.progress = Float(run.health) / Float(max(1, run.maxHealth))
         manaBar.progress = Float(run.mana / max(1, run.maxMana))
-        health.accessibilityLabel = "Health, \(run.health) of \(run.maxHealth)"
+        health.accessibilityLabel =
+            "Health, \(run.health.formatted(.number.precision(.fractionLength(0...1)))) of \(run.maxHealth)"
         mana.accessibilityLabel = "Mana, \(Int(run.mana)) of \(Int(run.maxMana))\(shield)"
         progress.accessibilityLabel = "Level \(run.wave), best cleared level \(run.bestWave)"
     }
@@ -411,7 +412,7 @@ final class RunStartView: UIView {
             detail.text =
                 bow
                 ? "Aim with the phone and tap to fire an arrow.\nSay “cast” to switch to the wand."
-                : "Wave to strike · Hold to draw\nZ lightning · O fire · V ice\nStar demon · W Nyan · Still shield\nRelease to cast. Say “shoot” for the bow."
+                : "Wave to strike · Hold to draw\nZ lightning · O fire · V ice\nHold still for shield\nRelease to cast. Say “shoot” for the bow."
         }
         hint.text = "Point the phone at a choice, then tap to preview.\nDouble-tap to confirm. No motion? Tap to cycle."
     }

@@ -3,8 +3,8 @@ import Foundation
 extension SpellCatalog {
     static let demon: SpellDefinition = SpellDefinition(
         id: .demon, title: "Demon", rune: .summon,
-        invocation: .gestureAndVoice(guide: "Star", .summonDemon, phrase: "summon demon", aliases: ["demon"]),
-        manaCost: 40,
+        invocation: .gesture(guide: "Star"),
+        manaCost: 0,
         effect: { context in
             return context.summon(.demon) {
                 RuneEffects.summon(
@@ -14,5 +14,5 @@ extension SpellCatalog {
         },
         presentation: .effectOwned,
         sound: .onCast(.summon, layers: [.demon]),
-        feedback: "Demon summoned.")
+        feedback: "Demon summoned. 20 MP per second for up to 5 seconds.")
 }

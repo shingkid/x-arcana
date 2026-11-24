@@ -5,6 +5,11 @@ import simd
 /// A small, repeatable encounter. Positions and speeds are in metres.
 final class Combat {
     static let spawnInterval: TimeInterval = 8
+    static func spawnInterval(for level: Int) -> TimeInterval {
+        max(2, spawnInterval * pow(0.9, Double(max(0, level - 1))))
+    }
+    static func zombieDamage(for level: Int) -> Double { 1 + 0.5 * Double(max(0, level - 1)) }
+    static let bowReloadDuration: TimeInterval = 0.4
     static let waveBreakDuration: TimeInterval = 20
 
     enum Event: Equatable {
@@ -140,7 +145,7 @@ final class Combat {
 
     convenience init(
         scene: SCNScene, camera: SCNNode, floorY: Float,
-        defaults: UserDefaults? = .standard, startsImmediately: Bool = true
+        defaults: UserDefaults? = .standard, startsImmediately: Bool = true, state: SurvivalState? = nil
     ) {
         var environment = EnvironmentDefinition.fantasy
         environment.floorY = floorY
@@ -149,14 +154,14 @@ final class Combat {
         }
         self.init(
             scene: scene, camera: camera, environment: environment,
-            defaults: defaults, startsImmediately: startsImmediately)
+            defaults: defaults, startsImmediately: startsImmediately, state: state)
     }
 
     init(
         scene: SCNScene, camera: SCNNode, environment: EnvironmentDefinition,
-        defaults: UserDefaults? = .standard, startsImmediately: Bool = true
+        defaults: UserDefaults? = .standard, startsImmediately: Bool = true, state: SurvivalState? = nil
     ) {
-        run = SurvivalState(defaults: defaults, hasStarted: startsImmediately)
+        run = state ?? SurvivalState(defaults: defaults, hasStarted: startsImmediately)
         self.scene = scene
         self.camera = camera
         self.floorY = environment.floorY
@@ -227,7 +232,7 @@ final class Combat {
             lastRejection = .cooldown
             return false
         }
-        guard remaining > 0 || pendingSpawns > 0 else {
+        guard remaining > 0, run.snapshot.nyanKillsSinceCast >= 20 else {
             lastRejection = .cooldown
             return false
         }
@@ -235,8 +240,6 @@ final class Combat {
             lastRejection = .insufficientMana
             return false
         }
-        // The curse owns the current wave only. Materialize its queued slots as cats.
-        while pendingSpawns > 0 { spawnNextZombie() }
         for enemy in enemies where enemy.health > 0 { transfigure(enemy) }
         allies.cancelAttacks()
         onChange?()
@@ -247,7 +250,9 @@ final class Combat {
         guard !run.snapshot.isGameOver else { return .gameOver }
         guard !isPaused, run.snapshot.hasStarted, run.snapshot.countdownRemaining <= 0 else { return .unavailable }
         guard !allies.contains(kind) else { return .alreadyActive }
-        guard run.canSpend(SpellCatalog.summon(kind).manaCost) else { return .insufficientMana }
+        guard run.canSpend(kind == .demon ? SummonCombat.demonManaPerSecond : SpellCatalog.summon(kind).manaCost) else {
+            return .insufficientMana
+        }
         guard let node = makeNode() else { return .unavailable }
         // Creation succeeds before existing companions are removed or mana is spent.
         guard run.spend(SpellCatalog.summon(kind).manaCost) else {
@@ -286,7 +291,13 @@ final class Combat {
         }
         elapsed += dt
         let wasNyanActive = run.snapshot.nyanRemaining > 0
-        run.update(deltaTime: dt)
+        let demonTime = min(dt, allies.demonRemaining)
+        if demonTime > 0 {
+            let cost = min(run.snapshot.mana, demonTime * SummonCombat.demonManaPerSecond)
+            _ = run.spend(cost)
+            if run.snapshot.mana <= 0.000001 { allies.dismissDemon() }
+        }
+        run.update(deltaTime: dt, suppressRegeneration: demonTime > 0)
         if wasNyanActive, run.snapshot.nyanRemaining <= 0 {
             finishTransfiguration(defeat: true)
         }
@@ -305,7 +316,7 @@ final class Combat {
             onStatus?("A new level has started. \(summary)")
             onChange?()
         }
-        if pendingSpawns > 0, elapsed >= nextSpawn {
+        if run.snapshot.nyanRemaining <= 0, pendingSpawns > 0, elapsed >= nextSpawn {
             spawnNextZombie()
             onStatus?(summary)
             onChange?()
@@ -313,9 +324,8 @@ final class Combat {
         let player = camera.simdWorldPosition
         for enemy in enemies where enemy.health > 0 {
             guard !run.snapshot.isGameOver else { break }
-            if run.snapshot.nyanRemaining > 0 {
-                transfigure(enemy)
-                enemy.transfiguration?.update(deltaTime: dt)
+            if let cat = enemy.transfiguration {
+                cat.update(deltaTime: dt)
                 enemy.node.setSlowRemaining(max(0, enemy.slowUntil - elapsed))
                 continue
             }
@@ -381,7 +391,7 @@ final class Combat {
                     if stillLiving, horizontalDistance(enemy.center, contact) <= 1.35,
                         abs(contact.y - enemy.center.y) < 1.5
                     {
-                        let amount = 1
+                        let amount = Self.zombieDamage(for: wave)
                         if let ally = pending.target {
                             allies.damage(node: ally, amount: amount)
                         } else {
@@ -452,6 +462,7 @@ final class Combat {
     }
 
     private func finishTransfiguration(defeat: Bool) {
+        if defeat { nextSpawn = elapsed + Self.spawnInterval(for: wave) }
         for enemy in enemies where enemy.transfiguration != nil {
             enemy.transfiguration?.remove()
             enemy.transfiguration = nil
@@ -722,7 +733,7 @@ final class Combat {
             Projectile(
                 node: node, velocity: travel * speed,
                 blastRadius: attack == .fireball ? 3 : 0, isLightning: attack == .zap))
-        shotCooldown = 0.24
+        shotCooldown = attack == .arrow ? Self.bowReloadDuration : 0.24
         _ = run.spend(cost)
         onChange?()
         return true
@@ -881,7 +892,7 @@ final class Combat {
         enemies.append(enemy)
         if run.snapshot.nyanRemaining > 0 { transfigure(enemy) }
         spawnedThisWave += 1
-        nextSpawn = elapsed + Self.spawnInterval
+        nextSpawn = elapsed + Self.spawnInterval(for: wave)
     }
 
     private func explode(at point: SIMD3<Float>, radius: Float) {

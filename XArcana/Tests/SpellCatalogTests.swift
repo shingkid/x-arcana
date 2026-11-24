@@ -10,7 +10,8 @@ final class SpellCatalogTests: XCTestCase {
         XCTAssertEqual(Set(SpellCatalog.all.compactMap(\.rune)), Set(RuneKind.allCases))
         XCTAssertEqual(SpellCatalog.all.compactMap(\.rune).count, RuneKind.allCases.count)
         let commands = SpellCatalog.all.compactMap(\.invocation.command)
-        XCTAssertEqual(Set(commands), Set(VoiceCommand.allCases.filter { $0 != .cast && $0 != .shoot }))
+        XCTAssertEqual(
+            Set(commands), Set(VoiceCommand.allCases.filter { $0 != .cast && $0 != .shoot && $0 != .summonDemon }))
         XCTAssertEqual(Set(commands).count, commands.count)
         let aliases = SpellCatalog.voiceAliases.map { VoiceCommandParser.normalize($0.phrase) }
         XCTAssertEqual(Set(aliases).count, aliases.count)
@@ -29,28 +30,63 @@ final class SpellCatalogTests: XCTestCase {
             return XCTFail("Nyan music must follow simulation time.")
         }
         for kind in SummonKind.allCases {
-            XCTAssertEqual(SpellCatalog.summon(kind).manaCost, kind.manaCost)
+            XCTAssertEqual(SpellCatalog.summon(kind).manaCost, kind == .demon ? 0 : kind.manaCost)
         }
     }
 
-    func testAllDeclaredVoiceAliasesParseOnceIncludingPunctuationAndNyanShortcuts() {
+    func testAllDeclaredVoiceAliasesParseOnceIncludingPunctuationAndExactNyanPhrase() {
         for alias in SpellCatalog.voiceAliases {
             var parser = VoiceCommandParser()
             let phrase = "Please " + alias.phrase.replacingOccurrences(of: " ", with: ", ") + "!"
             XCTAssertEqual(parser.consume(phrase), [alias.command], alias.phrase)
             XCTAssertTrue(parser.consume(phrase).isEmpty, alias.phrase)
         }
+        for oldPhrase in ["Nyan", "Summon nyan", "Nyan cat"] {
+            var parser = VoiceCommandParser()
+            XCTAssertTrue(parser.consume(oldPhrase).isEmpty)
+        }
         var parser = VoiceCommandParser()
-        XCTAssertEqual(parser.consume("Nyan. Summon nyan! Nyan cat."), [.nyan, .nyan, .nyan])
+        XCTAssertEqual(parser.consume("Nyan nyan!"), [.nyan])
+        XCTAssertTrue(parser.consume("Nyan nyan!").isEmpty)
+        XCTAssertEqual(SpellCatalog.nyan.invocation.phrases, ["nyan nyan"])
+        XCTAssertFalse(SpellCatalog.nyan.invocation.hasGesture)
         XCTAssertEqual(VoiceCommand(rawValue: "summonDemon"), .summonDemon)
         XCTAssertEqual(VoiceCommand(rawValue: "summonPatronus"), .summonPatronus)
         XCTAssertEqual(VoiceCommand(rawValue: "cast"), .cast)
         XCTAssertEqual(VoiceCommand(rawValue: "shoot"), .shoot)
     }
 
+    func testSecretSpellsStayOutOfEveryGuideWithoutChangingInvocations() {
+        for guide in [SpellCatalog.wandGestureGuide, SpellCatalog.wandVoiceGuide, SpellCatalog.voiceHelp] {
+            for name in ["demon", "nyan", "alan", "albert"] {
+                XCTAssertFalse(guide.lowercased().contains(name), "\(name) appeared in \(guide)")
+            }
+        }
+        XCTAssertTrue(SpellCatalog.wandGestureGuide.contains(SpellCatalog.lightning.title))
+        XCTAssertTrue(SpellCatalog.wandVoiceGuide.lowercased().contains("patronus"))
+        XCTAssertTrue(SpellCatalog.voiceHelp.contains("cast, shoot"))
+        XCTAssertTrue(SpellCatalog.gestureRunes.contains(.summon))
+        XCTAssertEqual(SpellCatalog.definition(for: VoiceCommand.summonAlan)?.id, .alan)
+        XCTAssertEqual(SpellCatalog.definition(for: VoiceCommand.summonAlbert)?.id, .albert)
+        var parser = VoiceCommandParser()
+        XCTAssertEqual(parser.consume("Alan. Albert. Nyan nyan!"), [.summonAlan, .summonAlbert, .nyan])
+    }
+
+    func testDemonUsesOnlyStarWhileLegacyWireValueStaysReadable() {
+        XCTAssertEqual(SpellCatalog.definition(for: .summon).id, .demon)
+        XCTAssertEqual(SpellCatalog.demon.invocation.gestureGuide, "Star")
+        XCTAssertNil(SpellCatalog.demon.invocation.command)
+        XCTAssertNil(SpellCatalog.definition(for: VoiceCommand.summonDemon))
+        XCTAssertEqual(VoiceCommand(rawValue: "summonDemon"), .summonDemon)
+        XCTAssertEqual(SpellCatalog.demon.manaCost, 0)
+        XCTAssertFalse(SpellCatalog.demon.acceptedFeedback.contains("-0 MP"))
+        var parser = VoiceCommandParser()
+        XCTAssertTrue(parser.consume("Demon. Summon demon!").isEmpty)
+    }
+
     @MainActor
-    private func host() -> Encounter {
-        let game = Encounter(startsImmediately: true, defaults: nil)
+    private func host(state: SurvivalState? = nil) -> Encounter {
+        let game = Encounter(startsImmediately: true, defaults: nil, state: state)
         game.stage.frame = CGRect(x: 0, y: 0, width: 640, height: 360)
         game.stage.layoutIfNeeded()
         game.start()
@@ -160,16 +196,36 @@ final class SpellCatalogTests: XCTestCase {
         game.handleVoice(.summonAlan)
         XCTAssertEqual(game.runSnapshot.mana, 25)
         tip.removeAction(forKey: "cast")
-        game.handleVoice(.summonDemon)
+        game.handleVoice(.summonPatronus)
         XCTAssertEqual(game.runSnapshot.mana, 25)
         XCTAssertNil(tip.action(forKey: "cast"))
-        XCTAssertTrue(game.status.contains("Demon needs 40"))
+        XCTAssertTrue(game.status.contains("Patronus needs 30"))
         XCTAssertEqual(game.room.scene.rootNode.childNodes.filter { $0.name?.hasPrefix("summon.") == true }.count, 2)
     }
 
     @MainActor
-    func testNyanVoiceUsesSameDefinitionAsRuneAndDuplicateDoesNotRestartOrSpend() throws {
+    func testStarDemonStartsWithoutUpfrontCostAndDuplicateAndVoiceDoNotSpend() throws {
         let game = host()
+        defer { game.stop() }
+        let point = game.room.castingPoint()
+        let tip = try XCTUnwrap(game.room.camera.childNode(withName: "wandTip", recursively: true))
+        XCTAssertTrue(game.castSpell(SpellCatalog.definition(for: .summon), at: point))
+        XCTAssertEqual(game.runSnapshot.mana, 100)
+        XCTAssertEqual(game.status, SpellCatalog.demon.acceptedFeedback)
+        tip.removeAction(forKey: "cast")
+        XCTAssertFalse(game.castSpell(SpellCatalog.demon, at: point))
+        XCTAssertEqual(game.runSnapshot.mana, 100)
+        XCTAssertNil(tip.action(forKey: "cast"))
+        game.handleVoice(.summonDemon)
+        XCTAssertEqual(game.runSnapshot.mana, 100)
+        XCTAssertNil(tip.action(forKey: "cast"))
+    }
+
+    @MainActor
+    func testNyanVoiceUsesCatalogDefinitionAndDuplicateDoesNotRestartOrSpend() throws {
+        let state = SurvivalState(defaults: nil)
+        for _ in 0..<20 { state.recordKill() }
+        let game = host(state: state)
         defer { game.stop() }
         let tip = try XCTUnwrap(game.room.camera.childNode(withName: "wandTip", recursively: true))
         game.handleVoice(.nyan)

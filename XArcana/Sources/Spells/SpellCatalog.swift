@@ -153,19 +153,23 @@ enum SpellCatalog {
         } + [("cast", .cast), ("shoot", .shoot)]
     }
 
+    private static var guideSpells: [SpellDefinition] {
+        all.filter { ![SpellID.demon, .nyan, .alan, .albert].contains($0.id) }
+    }
+
     static var wandGestureGuide: String {
-        all.compactMap { definition in
+        guideSpells.compactMap { definition in
             definition.invocation.gestureGuide.map { "\($0): \(definition.title)" }
         }.joined(separator: " · ")
     }
 
     static var wandVoiceGuide: String {
-        let shortcuts = all.compactMap { $0.invocation.phrases.min { $0.count < $1.count } }
+        let shortcuts = guideSpells.compactMap { $0.invocation.phrases.min { $0.count < $1.count } }
         return "Say: " + shortcuts.joined(separator: " · ")
     }
 
     static var voiceHelp: String {
-        let phrases = all.compactMap { $0.invocation.phrases.first }
+        let phrases = guideSpells.compactMap { $0.invocation.phrases.first }
         return (["cast", "shoot"] + phrases).joined(separator: ", ")
     }
 }

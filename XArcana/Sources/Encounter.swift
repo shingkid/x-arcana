@@ -11,9 +11,10 @@ final class Encounter: NSObject {
     let audio = SpellAudio()
     private let startsImmediately: Bool
     private let recordStore: UserDefaults?
+    private let initialState: SurvivalState?
     lazy var combat = Combat(
         scene: room.scene, camera: room.camera, environment: room.environment,
-        defaults: recordStore, startsImmediately: startsImmediately && room.errorMessage == nil)
+        defaults: recordStore, startsImmediately: startsImmediately && room.errorMessage == nil, state: initialState)
     var simulationActive = true {
         didSet {
             combat.setPaused(!simulationActive)
@@ -36,7 +37,7 @@ final class Encounter: NSObject {
         guard let kind = spell.preview else { return "Drawing…" }
         if kind == .shield {
             if let health = runSnapshot.shieldHealth, health > 0 {
-                return "Shield active · \(health) HP"
+                return "Shield active · \(health.formatted(.number.precision(.fractionLength(0...1)))) HP"
             }
             if runSnapshot.shieldCooldownRemaining > 0 {
                 return "Shield recovers in \(Int(ceil(runSnapshot.shieldCooldownRemaining)))s"
@@ -45,6 +46,12 @@ final class Encounter: NSObject {
                 return "Shield needs \(Int(SpellCatalog.shield.manaCost)) mana"
             }
             return "Shield ready · Release"
+        }
+        if kind == .nyan, runSnapshot.nyanKillsSinceCast < 20 {
+            return "Nyan locked · \(runSnapshot.nyanKillsSinceCast)/20 defeats"
+        }
+        if kind == .summon {
+            return runSnapshot.mana < 20 ? "Demon needs 20 mana" : "Demon · 20 MP/s · Release"
         }
         return "\(kind.title) · Release"
     }
@@ -148,9 +155,10 @@ final class Encounter: NSObject {
         }
     }
 
-    init(startsImmediately: Bool = false, defaults: UserDefaults? = .standard) {
+    init(startsImmediately: Bool = false, defaults: UserDefaults? = .standard, state: SurvivalState? = nil) {
         self.startsImmediately = startsImmediately
         self.recordStore = defaults
+        self.initialState = state
         super.init()
     }
 

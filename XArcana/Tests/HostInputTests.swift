@@ -7,17 +7,18 @@ import simd
 @MainActor
 final class HostInputTests: XCTestCase {
     func testLiveResetReturnsToLevelOneAndCancelsAnUnfinishedRune() {
-        let game = Encounter(defaults: nil)
+        let game = Encounter(defaults: nil, state: chargedNyanState())
         game.start()
         defer { game.stop() }
         confirmSetup(on: game)
         game.combat.update(at: 0)
         for frame in 1...62 { game.combat.update(at: Double(frame) * 0.05) }
+        let castTime = prepareFullHorde(on: game, from: 3.1)
         XCTAssertTrue(game.combat.nyan())
-        for frame in 63...610 { game.combat.update(at: Double(frame) * 0.05) }
+        for frame in 1...542 { game.combat.update(at: castTime + Double(frame) * 0.05) }
         XCTAssertEqual(game.runSnapshot.level, 1, "Clearing the horde does not start the next stage immediately")
         XCTAssertEqual(game.runSnapshot.xp, 0)
-        XCTAssertEqual(game.runSnapshot.score, 1050)
+        XCTAssertEqual(game.runSnapshot.score, 3050)
         game.handleVoice(.summonAlan)
         XCTAssertFalse(game.runSnapshot.isGameOver)
         game.receive(WandInput(kind: .begin, gesture: 20, timestamp: 100, yaw: 0, pitch: 0))
@@ -31,7 +32,7 @@ final class HostInputTests: XCTestCase {
         XCTAssertEqual(fresh.maxMana, 100)
         XCTAssertEqual(fresh.score, 0)
         XCTAssertEqual(fresh.kills, 0)
-        XCTAssertEqual(fresh.bestScore, 1050)
+        XCTAssertEqual(fresh.bestScore, 3050)
         XCTAssertEqual(fresh.bestWave, 1)
         XCTAssertFalse(fresh.hasStarted)
         XCTAssertEqual(game.setupStep, "world")
@@ -108,6 +109,21 @@ final class HostInputTests: XCTestCase {
         XCTAssertEqual(game.runSnapshot.mana, 100)
         game.receive(WandInput(kind: .begin, gesture: 3, timestamp: 105, yaw: 0, pitch: 0))
         XCTAssertTrue(game.isHolding)
+    }
+
+    private func chargedNyanState() -> SurvivalState {
+        let state = SurvivalState(defaults: nil, hasStarted: false)
+        for _ in 0..<20 { state.recordKill() }
+        return state
+    }
+
+    private func prepareFullHorde(on game: Encounter, from start: TimeInterval) -> TimeInterval {
+        let height = game.room.camera.simdPosition.y
+        game.room.camera.simdPosition.y = 6
+        let frames = Int(ceil((Combat.spawnInterval * 7 + 0.5) / 0.05))
+        for frame in 1...frames { game.combat.update(at: start + Double(frame) * 0.05) }
+        game.room.camera.simdPosition.y = height
+        return start + Double(frames) * 0.05
     }
 
     private func confirmSetup(on game: Encounter) {
@@ -349,7 +365,7 @@ final class HostInputTests: XCTestCase {
     }
 
     func testStageAnnouncementsFollowTheHordeInsteadOfExperience() throws {
-        let game = Encounter(defaults: nil)
+        let game = Encounter(defaults: nil, state: chargedNyanState())
         game.start()
         defer { game.stop() }
         confirmSetup(on: game)
@@ -358,16 +374,17 @@ final class HostInputTests: XCTestCase {
         let banner = try XCTUnwrap(game.stage.subviews.compactMap { $0 as? RunAnnouncementView }.first)
         XCTAssertEqual(banner.accessibilityLabel, "Level 1. Survive the horde · Health and mana full")
         game.stage.advanceAnnouncements(deltaTime: 3.1)
+        let castTime = prepareFullHorde(on: game, from: 3.1)
         XCTAssertTrue(game.combat.nyan())
-        for frame in 63...610 { game.combat.update(at: Double(frame) * 0.05) }
+        for frame in 1...542 { game.combat.update(at: castTime + Double(frame) * 0.05) }
         XCTAssertEqual(game.runSnapshot.level, 1)
         XCTAssertEqual(game.runSnapshot.xp, 0)
         XCTAssertTrue(banner.accessibilityLabel?.hasPrefix("Level 1 cleared!") == true)
         game.stage.advanceAnnouncements(deltaTime: 3.1)
-        for frame in 611...1020 { game.combat.update(at: Double(frame) * 0.05) }
+        for frame in 543...950 { game.combat.update(at: castTime + Double(frame) * 0.05) }
         XCTAssertEqual(game.runSnapshot.level, 2)
         XCTAssertEqual(game.runSnapshot.wave, 2)
-        XCTAssertEqual(game.runSnapshot.health, game.runSnapshot.maxHealth)
+        XCTAssertEqual(game.runSnapshot.health, Double(game.runSnapshot.maxHealth))
         XCTAssertEqual(game.runSnapshot.mana, game.runSnapshot.maxMana)
         XCTAssertEqual(banner.accessibilityLabel, "Level 2. Survive the horde · Health and mana full")
     }

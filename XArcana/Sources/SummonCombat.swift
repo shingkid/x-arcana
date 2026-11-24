@@ -5,6 +5,9 @@ import simd
 /// The registry owns companion health, movement, attacks, and expiry.
 /// SceneKit actions only display effects. Simulation time decides every impact.
 final class SummonCombat {
+    static let demonDuration: TimeInterval = 5
+    static let demonManaPerSecond: Double = 20
+
     struct Target {
         let node: SCNNode
         let center: SIMD3<Float>
@@ -12,14 +15,14 @@ final class SummonCombat {
 
     struct Impact {
         let node: SCNNode
-        let damage: Int
+        let damage: Double
         let slowDuration: TimeInterval
     }
 
     final class Companion {
         let kind: SummonKind
         let node: SCNNode
-        private(set) var health: Int
+        private(set) var health: Double
         var cooldown: TimeInterval = 0.7
         var slamCooldown: TimeInterval = 0.7
         var breathCooldown: TimeInterval = 0.7
@@ -41,7 +44,7 @@ final class SummonCombat {
             self.node = node
             health = kind.maxHealth
         }
-        func damage(_ amount: Int) { health = max(0, health - amount) }
+        func damage(_ amount: Double) { health = max(0, health - amount) }
     }
 
     enum AttackStyle { case slap, slam, combo, breath }
@@ -62,6 +65,11 @@ final class SummonCombat {
     }
     private var retiring: [RetiringCompanion] = []
     private var isPaused = false
+    var hasActiveDemon: Bool { contains(.demon) }
+    var demonRemaining: TimeInterval {
+        guard let demon = companions.first(where: { $0.kind == .demon }), hasActiveDemon else { return 0 }
+        return max(0, Self.demonDuration - demon.lifetime)
+    }
     var physicalTargets: [Target] {
         companions.filter { $0.kind != .patronus && $0.health > 0 && !$0.expired && $0.node.parent != nil }
             .map { Target(node: $0.node, center: $0.center) }
@@ -76,6 +84,12 @@ final class SummonCombat {
         companions.contains {
             $0.kind == kind && !$0.expired && $0.node.parent != nil && ($0.health > 0 || kind == .patronus)
         }
+    }
+
+    /// The host calls this when continuous mana spending reaches zero.
+    func dismissDemon() {
+        for demon in companions where demon.kind == .demon { dismiss(demon) }
+        companions.removeAll { $0.kind == .demon }
     }
 
     /// Call only after asset availability and mana have been validated.
@@ -125,12 +139,13 @@ final class SummonCombat {
         companions.contains { $0.node === node && $0.kind != .patronus && $0.health > 0 && node.parent != nil }
     }
 
-    func damage(node: SCNNode, amount: Int) {
+    func damage(node: SCNNode, amount: Double) {
+        guard amount.isFinite, amount > 0 else { return }
         guard let ally = companions.first(where: { $0.node === node && $0.kind != .patronus }), ally.health > 0 else {
             return
         }
         ally.damage(amount)
-        ally.healthText?.string = "\(ally.health)/\(ally.kind.maxHealth)"
+        ally.healthText?.string = healthLabel(for: ally)
         ally.healthFill?.simdScale.x = Float(ally.health) / Float(ally.kind.maxHealth)
         if ally.health == 0 {
             ally.attack = nil
@@ -158,6 +173,10 @@ final class SummonCombat {
         var impacts: [Impact] = []
         for ally in companions {
             ally.lifetime += dt
+            if ally.kind == .demon, ally.lifetime + 0.000001 >= Self.demonDuration {
+                dismiss(ally)
+                continue
+            }
             defer { if ally.kind == .demon { updateFlight(ally) } }
             if ally.kind == .patronus {
                 impacts += charge(ally, dt: dt, targets: enemies)
@@ -241,7 +260,7 @@ final class SummonCombat {
                 return length <= 3 && (length < 0.001 || simd_dot(offset / length, forward) >= 0.7071)
             }
         }
-        let amount = attack.style == .breath ? 2 : 1
+        let amount: Double = attack.style == .breath ? 2 : 1
         return victims.map { Impact(node: $0.node, damage: amount, slowDuration: 0) }
     }
 
@@ -298,6 +317,14 @@ final class SummonCombat {
         retiring.append(RetiringCompanion(node: ally.node, opacity: ally.node.opacity))
         CharacterAnimation.stop(on: ally.node)
         ally.node.removeAllActions()
+    }
+
+    private func dismiss(_ ally: Companion) {
+        ally.expired = true
+        ally.attack = nil
+        CharacterAnimation.stop(on: ally.node)
+        ally.node.removeAllActions()
+        ally.node.removeFromParentNode()
     }
 
     private func segmentDistance(_ point: SIMD3<Float>, from start: SIMD3<Float>, to end: SIMD3<Float>) -> Float {
@@ -404,7 +431,7 @@ final class SummonCombat {
             return node
         }
         _ = text(ally.kind.rawValue.capitalized, height: 0.12, y: 0.15)
-        let hp = text("\(ally.health)/\(ally.kind.maxHealth)", height: 0.085, y: -0.025)
+        let hp = text(healthLabel(for: ally), height: 0.085, y: -0.025)
         ally.healthText = hp.geometry as? SCNText
         func bar(color: UIColor, depth: Float) -> SCNNode {
             let geometry = SCNPlane(width: 0.6, height: 0.045)
@@ -423,6 +450,13 @@ final class SummonCombat {
         label.categoryBitMask = 2
         label.enumerateChildNodes { node, _ in node.categoryBitMask = 2 }
         ally.node.addChildNode(label)
+    }
+
+    private func healthLabel(for ally: Companion) -> String {
+        func value(_ health: Double) -> String {
+            health.rounded() == health ? String(Int(health)) : String(format: "%.1f", health)
+        }
+        return "\(value(ally.health))/\(value(ally.kind.maxHealth))"
     }
 
     private func showSlam(at point: SIMD3<Float>, radius: Float) {

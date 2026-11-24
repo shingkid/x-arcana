@@ -89,6 +89,66 @@ final class SummonCombatTests: XCTestCase {
         XCTAssertTrue(advance(combat, seconds: 10, targets: [enemy]).isEmpty)
     }
 
+    func testDemonExpiresAfterFiveSimulationSecondsAndCancelsPendingContacts() {
+        let scene = SCNScene()
+        let combat = SummonCombat(scene: scene)
+        let demon = companion(.demon, in: combat)
+        XCTAssertTrue(combat.hasActiveDemon)
+        XCTAssertEqual(combat.demonRemaining, 5)
+        _ = advance(combat, seconds: 4.7, targets: [])
+        XCTAssertEqual(combat.demonRemaining, 0.3, accuracy: 0.000001)
+        let enemy = target(at: SIMD3(0, 1, 1), in: scene)
+        combat.companions[0].attack = SummonCombat.PendingAttack(style: .combo, target: enemy.node)
+        combat.companions[0].attack?.elapsed = 0.25
+        XCTAssertEqual(advance(combat, seconds: 0.25, targets: [enemy]).count, 1)
+        XCTAssertTrue(combat.hasActiveDemon)
+        XCTAssertTrue(advance(combat, seconds: 0.05, targets: [enemy]).isEmpty)
+        XCTAssertFalse(combat.hasActiveDemon)
+        XCTAssertEqual(combat.demonRemaining, 0)
+        XCTAssertNil(demon.parent)
+        XCTAssertTrue(combat.physicalTargets.isEmpty)
+        XCTAssertTrue(advance(combat, seconds: 2, targets: [enemy]).isEmpty)
+    }
+
+    func testDemonPauseFreezesExpiryAndManaDismissalRemovesItImmediately() {
+        let scene = SCNScene()
+        let combat = SummonCombat(scene: scene)
+        let demon = companion(.demon, in: combat)
+        _ = advance(combat, seconds: 1, targets: [])
+        combat.setPaused(true)
+        _ = advance(combat, seconds: 10, targets: [])
+        XCTAssertEqual(combat.demonRemaining, 4, accuracy: 0.000001)
+        XCTAssertTrue(combat.hasActiveDemon)
+        combat.setPaused(false)
+        let enemy = target(at: SIMD3(0, 1, 1), in: scene)
+        combat.companions[0].attack = SummonCombat.PendingAttack(style: .combo, target: enemy.node)
+        combat.dismissDemon()
+        combat.dismissDemon()
+        XCTAssertFalse(combat.hasActiveDemon)
+        XCTAssertEqual(combat.demonRemaining, 0)
+        XCTAssertNil(demon.parent)
+        XCTAssertTrue(combat.companions.isEmpty)
+        XCTAssertTrue(advance(combat, seconds: 5, targets: [enemy]).isEmpty)
+        _ = companion(.demon, in: combat)
+        XCTAssertEqual(combat.demonRemaining, 5)
+        combat.reset()
+        XCTAssertFalse(combat.hasActiveDemon)
+    }
+
+    func testCompanionHealthPreservesFractionalStageDamage() {
+        let scene = SCNScene()
+        let combat = SummonCombat(scene: scene)
+        let alan = companion(.alan, in: combat)
+        combat.damage(node: alan, amount: 1.5)
+        XCTAssertEqual(combat.companions[0].health, 13.5)
+        XCTAssertEqual(combat.companions[0].healthText?.string as? String, "13.5/15")
+        for amount in [Double.nan, .infinity, -1, 0] { combat.damage(node: alan, amount: amount) }
+        XCTAssertEqual(combat.companions[0].health, 13.5)
+        combat.damage(node: alan, amount: 13.5)
+        XCTAssertFalse(combat.isLiving(alan))
+        XCTAssertNil(alan.parent)
+    }
+
     func testDemonBreathHitsConeOncePerEnemyAndSlamHasIndependentCooldown() {
         let scene = SCNScene()
         let combat = SummonCombat(scene: scene)

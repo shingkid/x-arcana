@@ -26,14 +26,15 @@ Point the phone at a world or weapon option, tap to select, and double-tap to co
 The first zombie arrives after the three-second countdown.
 In wand mode, hold the screen, draw, and release.
 Wave without touching the screen to strike a nearby zombie for 1 damage.
-Draw Z for lightning, O for fire, V for ice, a star for the demon, or W for Nyan Cat.
+Draw Z for lightning, O for fire, V for ice, or a star for the demon.
 Hold still for the shield and release after the readiness vibration.
 The shield absorbs 20 damage and stays until depleted.
 It costs 20 MP, has a ten-second cooldown, and does not refill when a new stage begins.
-Say **Nyan** if drawing W is inconvenient.
+Say **nyan nyan** to invoke Nyan Cat.
+Nyan, demon, Alan, and Albert are omitted from the in-game spell guide.
 Say **cast** or **shoot** to switch weapons.
 Tap to fire the bow.
-Say **Albert**, **Alan**, **Demon**, **Patronus**, **Lumos**, or **Revelio** for the other spells.
+Say **Albert**, **Alan**, **Patronus**, **Lumos**, or **Revelio** for the other spells.
 
 Without head tracking, use **WASD** to move and the **arrow keys** to look around during play.
 The iPhone still controls spells and the bow.
@@ -43,7 +44,13 @@ Walking pauses during drawing and briefly after release.
 This tracks the phone's position, not the glasses, and can also be previewed on the Mac display.
 
 Start with 100 HP and 100 MP.
-Each level is one stage of eight zombies with 2 HP each, with one spawn every eight seconds.
+Each level is one stage of eight zombies with 2 HP each.
+Spawns start eight seconds apart and become 10% faster each level, down to two seconds apart.
+Zombie hits start at 1 damage and increase by 0.5 each level.
+The bow reloads in 0.4 seconds.
+The demon requires a star, drains 20 MP per second, and vanishes after five seconds or when mana runs out.
+Nyan requires 20 defeats before each use, including the first.
+It transforms only zombies on the field; queued zombies wait until the curse ends.
 Each kill earns 100 score, and clearing the stage earns another 250.
 After a twenty-second break, the next stage begins and adds 10 maximum HP and MP, then fully refills both.
 Kills do not grant XP or increase the level.

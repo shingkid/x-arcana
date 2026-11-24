@@ -143,10 +143,13 @@ final class SetupSelectionTests: XCTestCase {
             }
             let text = labels.compactMap(\.text).joined(separator: " ")
             for invocation in [
-                "Z:", "O:", "V:", "still", "Star", "W:", "Alan", "Albert", "Patronus", "Lumos", "Revelio", "Nyan",
+                "Z:", "O:", "V:", "still", "Patronus", "Lumos", "Revelio",
                 "Wave to strike", "Hold to draw",
             ] {
                 XCTAssertTrue(text.localizedCaseInsensitiveContains(invocation), invocation)
+            }
+            for hidden in ["Star", "Demon", "W:", "Alan", "Albert", "Nyan"] {
+                XCTAssertFalse(text.localizedCaseInsensitiveContains(hidden), hidden)
             }
             let image = UIGraphicsImageRenderer(size: size).image { stage.layer.render(in: $0.cgContext) }
             let attachment = XCTAttachment(image: image)

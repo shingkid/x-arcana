@@ -116,8 +116,17 @@ final class RainbowCatTests: XCTestCase {
         let device = try XCTUnwrap(MTLCreateSystemDefaultDevice())
         let room = GameWorld()
         XCTAssertNil(room.errorMessage)
-        let combat = Combat(scene: room.scene, camera: room.camera, environment: room.environment, defaults: nil)
+        let state = SurvivalState(defaults: nil)
+        for _ in 0..<20 { state.recordKill() }
+        let combat = Combat(
+            scene: room.scene, camera: room.camera, environment: room.environment, defaults: nil, state: state)
         combat.update(at: 0)
+        let height = room.camera.simdPosition.y
+        room.camera.simdPosition.y = 6
+        let spawnFrames = Int(ceil((Combat.spawnInterval * 7 + 0.5) * 60))
+        for frame in 1...spawnFrames { combat.update(at: Double(frame) / 60) }
+        room.camera.simdPosition.y = height
+        let castTime = Double(spawnFrames) / 60
         XCTAssertTrue(combat.nyan())
         let renderer = SCNRenderer(device: device, options: nil)
         renderer.scene = room.scene
@@ -127,12 +136,12 @@ final class RainbowCatTests: XCTestCase {
         for mark in [0.0, 7, 17, 26] {
             while time + 1 / 60 <= mark {
                 time += 1 / 60
-                combat.update(at: time)
+                combat.update(at: castTime + time)
             }
             if mark == 17 {
                 room.camera.simdOrientation *= simd_quatf(angle: 0.45, axis: SIMD3(0, 1, 0))
                 time += 1 / 60
-                combat.update(at: time)
+                combat.update(at: castTime + time)
             }
             room.setTransfigurationPhase(combat.transfigurationPhase)
             var positions: [SIMD3<Float>] = []
@@ -161,9 +170,9 @@ final class RainbowCatTests: XCTestCase {
         }
         while time < SurvivalState.nyanDuration + 0.1 {
             time += 1 / 60
-            combat.update(at: time)
+            combat.update(at: castTime + time)
         }
-        XCTAssertEqual(combat.kills, 8)
+        XCTAssertEqual(combat.kills, 28)
         XCTAssertNil(room.scene.rootNode.childNode(withName: "Transfigured Nyan cat", recursively: true))
     }
 

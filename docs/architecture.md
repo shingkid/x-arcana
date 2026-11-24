@@ -45,7 +45,8 @@ The controller cannot set health, mana, score, or enemy state.
 Reconnection resumes the same run and cancels stale held gestures.
 Game-over stops combat while head tracking continues.
 Each zombie awards 100 score once and does not grant XP.
-A stage contains eight zombies with 2 HP each, spawning eight seconds apart.
+A stage contains eight zombies with 2 HP each, spawning eight seconds apart at level 1.
+Each later level multiplies the interval by 0.9, with a two-second minimum.
 Clearing a stage awards 250 score and starts a twenty-second break.
 The level counts stages, starting at level 1.
 At the beginning of each subsequent stage, both resource maximums increase by 10 and HP and MP refill completely.
@@ -55,7 +56,7 @@ Mana regenerates at 4 MP per simulation second after a two-second delay from spe
 Touch-down captures the current wand aim as the drawing origin, without moving it to the centre.
 Zombie health retains fractions so fireball can divide its 5-damage budget among all blast victims.
 Distance-based weights give nearer victims a larger share.
-Zombie swipes and bites each deal 1 damage.
+Zombie swipes and bites each deal 1 damage at level 1, increasing by 0.5 each level.
 Wand melee, arrows, and physical ally attacks each deal 1 damage.
 Lightning, ice, and devil fire breath each deal 2 damage.
 Fireball divides 5 total damage across victims within a 3-metre blast.
@@ -134,3 +135,16 @@ One target selects the Mac host or phone controller at compile time.
 Mac-only resource filters exclude models, textures, rigs, and game audio from the phone bundle.
 `SyncProject.py` synchronizes source membership and resource folders without an external project-generator dependency.
 Its `--check` mode fails when a new file is not registered.
+
+## Revised summon and bow balance
+
+The demon is invoked only by drawing a star.
+It needs at least 20 MP to appear, has no upfront charge, and drains 20 MP per simulation second.
+Mana regeneration pauses while it is active.
+It disappears after five simulation seconds or when mana runs out.
+Nyan needs 20 zombie defeats before every cast, including the first, and still costs 80 MP.
+One living zombie becomes one cat; queued zombies do not produce extra cats.
+Spawning pauses during the 27-second curse, then resumes after the current level's spawn interval.
+Only transformed zombies disappear at the song boundary.
+The glasses show Nyan progress out of 20.
+The bow has a 0.4-second reload.

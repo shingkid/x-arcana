@@ -80,21 +80,22 @@ Changing an existing spell's voice aliases requires no parser switch.
 Keep normalized aliases unique across spells and weapon commands.
 The `cast` and `shoot` commands remain weapon selectors.
 
-The accepted gesture families are loose Z or lightning zigzags, broad open O or oval shapes, uneven V shapes, stars, and W shapes.
-W recognition accepts shallow or rounded valleys and uneven arms in either drawing direction.
-It still requires two distinct valleys, so a V or extra waves do not become Nyan.
+The accepted gesture families are loose Z or lightning zigzags, broad open O or oval shapes, uneven V shapes, and stars.
+W shapes are rejected and do not invoke Nyan.
 Fire also accepts angular loops, thin ovals, and large gaps.
-The star, V, and W families remain separate.
+The star, V, and O families remain separate.
 Holding still for about one second charges Shield.
 Only release casts the prepared spell.
 Touch-down starts the held drawing at the current phone aim, without moving the wand to the centre.
 Idle wand swings use a separate melee detector, deal 1 damage, and cannot spend mana or recognize a rune.
-Nyan also accepts `Nyan`, `summon nyan`, and `nyan cat` by voice.
+Nyan accepts only `nyan nyan` by voice and has no gesture mapping.
+The in-game spell guide omits Nyan, demon, Alan, and Albert.
 
 ## Preserve survival rules
 
 The level identifies the current stage, not XP progression.
-Each stage contains eight zombies with 2 HP each, spawning eight seconds apart.
+Each stage contains eight zombies with 2 HP each, spawning eight seconds apart at level 1.
+Each later level multiplies the interval by 0.9, with a two-second minimum.
 Kills award 100 score each and do not award XP or advance the level.
 Clearing a stage awards 250 score and starts a twenty-second break.
 When the next stage begins, maximum HP and MP each increase by 10 and both resources refill completely.
@@ -102,7 +103,8 @@ The run starts at 100 HP and 100 MP.
 Mana regenerates at 4 MP per simulation second after a two-second delay from spending.
 Keep internal `wave` and `bestWave` wire and storage keys for compatibility.
 
-Zombie attacks, wand melee, arrows, and physical ally attacks each deal 1 damage.
+Zombie attacks start at 1 damage, increasing by 0.5 per level.
+Wand melee, arrows, and physical ally attacks each deal 1 damage.
 Lightning, ice, and devil fire breath each deal 2 damage.
 Fireball shares 5 total damage across a 3-metre blast, weighted toward victims near the centre.
 Preserve fractional zombie HP when distributing that damage.
@@ -147,3 +149,16 @@ Then connect the Mac host and iPhone controller and check the actual spell, feed
 > Add tests for successful casting, invalid targets, insufficient mana, cooldowns, duplicate effects, and pause timing where applicable.
 > Regenerate the project lists, format the changed files, and run the affected tests.
 > Report verified results and any remaining physical-device checks.
+
+## Revised summon and bow balance
+
+The demon is invoked only by drawing a star.
+It needs at least 20 MP to appear, has no upfront charge, and drains 20 MP per simulation second.
+Mana regeneration pauses while it is active.
+It disappears after five simulation seconds or when mana runs out.
+Nyan needs 20 zombie defeats before every cast, including the first, and still costs 80 MP.
+One living zombie becomes one cat; queued zombies do not produce extra cats.
+Spawning pauses during the 27-second curse, then resumes after the current level's spawn interval.
+Only transformed zombies disappear at the song boundary.
+The glasses show Nyan progress out of 20.
+The bow has a 0.4-second reload.

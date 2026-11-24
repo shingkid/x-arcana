@@ -136,7 +136,7 @@ final class RuneTests: XCTestCase {
         }
     }
 
-    func testNyanWAcrossUnevenStrokesScaleSpeedDirectionAndOffset() {
+    func testRetiredWStaysUnrecognizedAcrossScaleSpeedDirectionAndOffset() {
         let variants = [
             [
                 CGPoint(x: 0, y: 0), CGPoint(x: 0.10, y: -0.3), CGPoint(x: 0.2, y: 0),
@@ -154,15 +154,15 @@ final class RuneTests: XCTestCase {
                     jitter: 0.002 * scale)
                 for reverse in [false, true] {
                     let drawn = reverse ? Array(path.reversed()) : path
-                    XCTAssertEqual(RuneRecognizer.recognize(drawn), .nyan)
+                    XCTAssertNil(RuneRecognizer.recognize(drawn))
                     for fps in [30, 60, 120] {
                         for duration in [0.2, 0.75, 2.8] {
                             var rune = RuneCasting()
                             rune.begin(angles: .zero, at: 0)
                             let end = feed(drawn, into: &rune, fps: fps, duration: duration)
-                            XCTAssertEqual(rune.preview, .nyan, "scale \(scale), fps \(fps), duration \(duration)")
+                            XCTAssertNil(rune.preview, "scale \(scale), fps \(fps), duration \(duration)")
                             XCTAssertTrue(rune.isDrawing)
-                            XCTAssertEqual(rune.finish(angles: end, at: duration), .nyan)
+                            XCTAssertNil(rune.finish(angles: end, at: duration))
                             XCTAssertNil(rune.preview)
                         }
                     }
@@ -171,7 +171,7 @@ final class RuneTests: XCTestCase {
         }
     }
 
-    func testLaxNyanAcceptsShallowRoundedShortAndUnevenWs() {
+    func testRetiredWStaysUnrecognizedWithShallowRoundedShortAndUnevenStrokes() {
         let uneven = [
             CGPoint(x: 0, y: -0.07), CGPoint(x: 0.06, y: -0.32),
             CGPoint(x: 0.19, y: -0.19), CGPoint(x: 0.27, y: -0.36), CGPoint(x: 0.43, y: -0.1),
@@ -198,15 +198,15 @@ final class RuneTests: XCTestCase {
                 let translated = path.map { CGPoint(x: $0.x * scale + 0.7, y: $0.y * scale - 0.2) }
                 for reverse in [false, true] {
                     let drawn = reverse ? Array(translated.reversed()) : translated
-                    XCTAssertEqual(RuneRecognizer.recognize(drawn), .nyan, "variant \(variant), scale \(scale)")
+                    XCTAssertNil(RuneRecognizer.recognize(drawn), "variant \(variant), scale \(scale)")
                     for duration in [0.3, 0.6, 1.3, 4.0] {
                         for fps in [30, 60] {
                             var rune = RuneCasting()
                             let start = SIMD2<Float>(3.08, -0.2)
                             rune.begin(angles: start, at: 0)
                             let end = feed(drawn, into: &rune, fps: fps, duration: duration, start: start)
-                            XCTAssertEqual(
-                                rune.finish(angles: end, at: duration), .nyan,
+                            XCTAssertNil(
+                                rune.finish(angles: end, at: duration),
                                 "variant \(variant), scale \(scale), duration \(duration), fps \(fps)")
                         }
                     }
@@ -215,7 +215,7 @@ final class RuneTests: XCTestCase {
         }
     }
 
-    func testNyanRequiresTwoValleysAndRejectsExtraWaves() {
+    func testZigzagsCannotBecomeRetiredNyanRune() {
         for count in [2, 6, 8] {
             let corners = (0...count).map { i in
                 CGPoint(x: CGFloat(i) * 0.1, y: i % 2 == 0 ? 0 : -0.3)
@@ -233,7 +233,7 @@ final class RuneTests: XCTestCase {
     }
 
     func testFormerDirectionalGesturesAreVoiceOnly() {
-        XCTAssertEqual(RuneKind.gestureCases, [.zap, .fireball, .ice, .shield, .summon, .nyan])
+        XCTAssertEqual(RuneKind.gestureCases, [.zap, .fireball, .ice, .shield, .summon])
         for destination in [
             CGPoint(x: 0.3, y: 0.02), CGPoint(x: -0.3, y: 0.04),
             CGPoint(x: 0.03, y: 0.3), CGPoint(x: -0.02, y: -0.3),
@@ -308,6 +308,38 @@ final class RuneTests: XCTestCase {
                 for frame in 1...60 { rune.update(angles: middle, at: 0.4 + Double(frame) / 60) }
                 let end = feed(Array(sampled.suffix(46)), into: &rune, duration: 0.7, start: middle, at: 1.4)
                 XCTAssertEqual(rune.finish(angles: end, at: 2.1), expected)
+            }
+        }
+    }
+
+    func testSymmetricAndRoundedVsStayIceInsteadOfFire() {
+        let sharp = trace([
+            CGPoint(x: 0, y: 0), CGPoint(x: 0.18, y: -0.36), CGPoint(x: 0.36, y: 0),
+        ])
+        let rounded = sharp.indices.map { i -> CGPoint in
+            let neighbors = sharp[max(0, i - 3)...min(sharp.count - 1, i + 3)]
+            return CGPoint(
+                x: neighbors.reduce(0) { $0 + $1.x } / CGFloat(neighbors.count),
+                y: neighbors.reduce(0) { $0 + $1.y } / CGFloat(neighbors.count))
+        }
+        for (variant, path) in [sharp, rounded].enumerated() {
+            for scale: CGFloat in [0.3, 1, 2.2] {
+                let translated = path.map { CGPoint(x: $0.x * scale + 0.7, y: $0.y * scale - 0.2) }
+                for reverse in [false, true] {
+                    let drawn = reverse ? Array(translated.reversed()) : translated
+                    let context = "variant \(variant), scale \(scale), reverse \(reverse)"
+                    XCTAssertEqual(RuneRecognizer.recognize(drawn), .ice, context)
+                    for duration in [0.3, 0.8, 3.5] {
+                        for fps in [30, 60, 120] {
+                            var rune = RuneCasting()
+                            rune.begin(angles: .zero, at: 0)
+                            let end = feed(drawn, into: &rune, fps: fps, duration: duration)
+                            let capture = "\(context), \(duration)s at \(fps)fps"
+                            XCTAssertEqual(rune.preview, .ice, capture)
+                            XCTAssertEqual(rune.finish(angles: end, at: duration), .ice, capture)
+                        }
+                    }
+                }
             }
         }
     }
