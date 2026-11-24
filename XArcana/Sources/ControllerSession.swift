@@ -23,10 +23,12 @@ final class ControllerSession: NSObject {
             && (state.run?.countdownRemaining ?? 0) <= 0
     }
     var isBow: Bool { state.mode == "bow" }
+    var phoneWalkingStatus: String { positionTracking.status }
 
     private let client = ControllerClient()
     private let motion = WandMotion()
     private let voice = VoiceCommands()
+    private let positionTracking = PhonePositionTracking()
     private let feedback = UIImpactFeedbackGenerator(style: .medium)
     private var clock: CADisplayLink?
     private var voiceEnabled = false
@@ -60,6 +62,7 @@ final class ControllerSession: NSObject {
                 self.feedback.impactOccurred(intensity: 1)
                 self.feedback.prepare()
             }
+            self.updatePositionTracking()
             self.onChange?()
         }
         client.onConnection = { [weak self] connected, message in
@@ -72,8 +75,16 @@ final class ControllerSession: NSObject {
                 self.state = HostState()
                 self.status = "Open X Arcana on your Mac and use the same Wi-Fi network."
             }
+            self.updatePositionTracking()
             self.onChange?()
         }
+        positionTracking.onSample = { [weak self] position, timestamp in
+            guard let self, self.clock != nil, self.isReady,
+                self.state.supportsPhonePosition == true, self.state.phoneWalkingEnabled == true
+            else { return }
+            _ = self.send(WandInput(kind: .position, timestamp: timestamp, position: position))
+        }
+        positionTracking.onStatusChange = { [weak self] _ in self?.onChange?() }
         voice.onCommand = { [weak self] command in self?.sendVoice(command) }
         voice.onStatus = { [weak self] message in
             self?.voiceStatus = message
@@ -104,13 +115,15 @@ final class ControllerSession: NSObject {
         clock.preferredFrameRateRange = CAFrameRateRange(minimum: 60, maximum: 60, preferred: 60)
         clock.add(to: .main, forMode: .common)
         self.clock = clock
+        updatePositionTracking()
         feedback.prepare()
     }
 
     func stop() {
-        cancelDrawing()
         clock?.invalidate()
         clock = nil
+        positionTracking.stop()
+        cancelDrawing()
         motion.stop()
         voice.stop()
         client.stop()
@@ -153,6 +166,7 @@ final class ControllerSession: NSObject {
         gesture = nextGesture
         guard sendMotion(.begin, gesture: gesture) else { return }
         isHolding = true
+        updatePositionTracking()
         status = isBow ? "Lift to release an arrow." : "Drawing. Lift your finger to cast."
         feedback.impactOccurred(intensity: 0.45)
         feedback.prepare()
@@ -169,6 +183,7 @@ final class ControllerSession: NSObject {
             feedback.impactOccurred()
             feedback.prepare()
         }
+        updatePositionTracking()
         onChange?()
     }
 
@@ -184,7 +199,15 @@ final class ControllerSession: NSObject {
                     timestamp: ProcessInfo.processInfo.systemUptime))
         }
         status = "Gesture cancelled. Hold again when ready."
+        updatePositionTracking()
         onChange?()
+    }
+
+    private func updatePositionTracking() {
+        positionTracking.configure(
+            enabled: clock != nil && isReady && state.supportsPhonePosition == true
+                && state.phoneWalkingEnabled == true,
+            holding: isHolding || state.isHolding)
     }
 
     func setSeeThrough(_ enabled: Bool) {
@@ -274,6 +297,7 @@ final class ControllerSession: NSObject {
             // Failed sends are discarded. A reconnect always requires a fresh touch.
             isHolding = false
             gesture = 0
+            positionTracking.stop()
             status = "Connection interrupted. Open X Arcana on your Mac."
             onChange?()
             return false

@@ -10,7 +10,10 @@ final class ControllerLinkTests: XCTestCase {
         let old = Data(
             "{\"status\":\"Ready\",\"mode\":\"wand\",\"isHolding\":false,\"battle\":\"\",\"headStatus\":\"\",\"isSeeThrough\":false,\"ready\":true}"
                 .utf8)
-        XCTAssertNil(try JSONDecoder().decode(HostState.self, from: old).run)
+        let legacy = try JSONDecoder().decode(HostState.self, from: old)
+        XCTAssertNil(legacy.run)
+        XCTAssertNil(legacy.supportsPhonePosition)
+        XCTAssertNil(legacy.phoneWalkingEnabled)
     }
 
     func testRestartCannotInterruptAnUncancelledWireGesture() throws {
@@ -145,6 +148,75 @@ final class ControllerLinkTests: XCTestCase {
             status: "Ready", mode: "bow", isHolding: true, battle: "3 enemies",
             headStatus: "Tracking", isSeeThrough: true, ready: false)
         XCTAssertEqual(try JSONDecoder().decode(HostState.self, from: JSONEncoder().encode(state)), state)
+    }
+
+    func testPositionRoundTripAndIndependentGestureClock() throws {
+        let sample = PhonePositionSample(session: UUID(), x: 1, y: 2, z: -3, heading: .pi / 2, quality: .tracking)
+        let input = WandInput(kind: .position, timestamp: 10, position: sample)
+        XCTAssertEqual(try JSONDecoder().decode(WandInput.self, from: JSONEncoder().encode(input)), input)
+        let state = HostState(supportsPhonePosition: true, phoneWalkingEnabled: true)
+        XCTAssertEqual(try JSONDecoder().decode(HostState.self, from: JSONEncoder().encode(state)), state)
+        var validator = ControllerInputValidator()
+        try validator.accept(WandInput(kind: .begin, gesture: 1, timestamp: 1))
+        try validator.accept(input)
+        try validator.accept(WandInput(kind: .end, gesture: 1, timestamp: 2))
+        XCTAssertThrowsError(try validator.accept(input))
+        XCTAssertThrowsError(try validator.accept(WandInput(kind: .position, timestamp: 9, position: sample)))
+        try validator.accept(WandInput(kind: .position, timestamp: 11, position: sample))
+    }
+
+    func testPositionRejectsInvalidPoseAndUnexpectedFields() {
+        let session = UUID()
+        let valid = PhonePositionSample(session: session, x: 0, y: 0, z: 0, heading: 0, quality: .tracking)
+        let invalidSamples = [
+            PhonePositionSample(session: session, x: .nan, y: 0, z: 0, heading: 0, quality: .tracking),
+            PhonePositionSample(session: session, x: 0, y: .infinity, z: 0, heading: 0, quality: .tracking),
+            PhonePositionSample(session: session, x: 0, y: 0, z: 1_001, heading: 0, quality: .limited),
+            PhonePositionSample(session: session, x: 0, y: 0, z: 0, heading: .nan, quality: .unavailable),
+            PhonePositionSample(session: session, x: 0, y: 0, z: 0, heading: 4, quality: .suspended),
+            PhonePositionSample(
+                session: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,
+                x: 0, y: 0, z: 0, heading: 0, quality: .tracking),
+        ]
+        var inputs = invalidSamples.map { WandInput(kind: .position, timestamp: 1, position: $0) }
+        inputs += [
+            WandInput(kind: .position, timestamp: 1),
+            WandInput(kind: .position, gesture: 1, timestamp: 1, position: valid),
+            WandInput(kind: .position, timestamp: 1, yaw: 0, pitch: 0, position: valid),
+            WandInput(kind: .position, timestamp: 1, command: "cast", position: valid),
+            WandInput(kind: .position, timestamp: 1, seeThrough: false, position: valid),
+            WandInput(kind: .position, timestamp: 0, position: valid),
+            WandInput(kind: .position, timestamp: .infinity, position: valid),
+            WandInput(kind: .sample, timestamp: 1, yaw: 0, pitch: 0, position: valid),
+        ]
+        for input in inputs {
+            var validator = ControllerInputValidator()
+            XCTAssertThrowsError(try validator.accept(input), "Accepted invalid input: \(input)")
+        }
+    }
+
+    func testAlternatingPositionAndMotionCoalesceSeparatelyAndPreserveStateChanges() throws {
+        var outbox = ControllerOutbox()
+        let session = UUID()
+        func position(_ time: Double, _ quality: PhonePositionSample.Quality = .tracking) -> WandInput {
+            WandInput(
+                kind: .position, timestamp: time,
+                position: PhonePositionSample(
+                    session: session, x: Float(time), y: 0, z: 0, heading: 0, quality: quality))
+        }
+        for i in 1...1_000 {
+            try outbox.append(.init(kind: .input, input: position(Double(i))))
+            try outbox.append(
+                .init(kind: .input, input: WandInput(kind: .sample, timestamp: Double(i), yaw: Float(i), pitch: 0)))
+        }
+        XCTAssertEqual(outbox.items.count, 2)
+        XCTAssertEqual(outbox.pop()?.input, position(1_000))
+        XCTAssertEqual(outbox.pop()?.input?.yaw, 1_000)
+        let ordered = [
+            position(1), position(2, .limited), position(3), WandInput(kind: .begin, gesture: 1), position(4),
+        ]
+        for input in ordered { try outbox.append(.init(kind: .input, input: input)) }
+        XCTAssertEqual(outbox.items.compactMap(\.input), ordered)
     }
 
     @MainActor

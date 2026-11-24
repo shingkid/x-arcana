@@ -4,7 +4,7 @@ import UIKit
 @MainActor
 final class Encounter: NSObject {
     static let shared = Encounter()
-    private static let aimHint = "Hold the screen and trace a rune. Lift your finger to cast."
+    private static let aimHint = "Wave without touching to strike. Hold, draw, and release to cast."
 
     let room = GameWorld()
     lazy var stage = GameStage(room: room)
@@ -18,6 +18,7 @@ final class Encounter: NSObject {
         didSet {
             combat.setPaused(!simulationActive)
             if !simulationActive {
+                resetMovementInput()
                 cancelDrawing()
                 activeGesture = nil
             }
@@ -27,12 +28,16 @@ final class Encounter: NSObject {
     var runSnapshot: RunSnapshot { combat.runSnapshot }
     var shieldReady: Bool {
         isHolding && spell.preview == .shield && runSnapshot.mana >= SpellCatalog.shield.manaCost
+            && (runSnapshot.shieldHealth ?? 0) <= 0
             && runSnapshot.shieldCooldownRemaining <= 0 && !runSnapshot.isGameOver
     }
     var castPreview: String? {
         guard spell.isHolding, !runSnapshot.isGameOver else { return nil }
         guard let kind = spell.preview else { return "Drawing…" }
         if kind == .shield {
+            if let health = runSnapshot.shieldHealth, health > 0 {
+                return "Shield active · \(health) HP"
+            }
             if runSnapshot.shieldCooldownRemaining > 0 {
                 return "Shield recovers in \(Int(ceil(runSnapshot.shieldCooldownRemaining)))s"
             }
@@ -56,11 +61,92 @@ final class Encounter: NSObject {
     private var remoteAngles: SIMD2<Float>?
     private var remoteTime: TimeInterval = 0
     private var lastIdleMotionAt: TimeInterval?
+    private var wandMelee = WandMelee()
     private var activeGesture: UInt64?
     private lazy var performance = ScenePerformance(scene: room.scene, camera: room.camera)
     weak var display: UIView?
     private var clock: CADisplayLink?
     private var lastAnnouncementTime: TimeInterval?
+    var desktopInput: (() -> DesktopMovementInput)?
+    private var desktopMovement = DesktopMovement()
+    private var phoneWalking = PhoneWalking()
+    private var pendingPosition: WandInput?
+    private var lastPositionArrival: TimeInterval?
+    private var meleeWalkingSuspendedUntil: TimeInterval = 0
+    var phoneWalkingEnabled = false {
+        didSet {
+            phoneWalking.reset()
+            pendingPosition = nil
+            lastPositionArrival = nil
+            desktopMovement.reset()
+            walkingStatus = phoneWalkingEnabled ? "Phone walking: waiting for camera tracking" : ""
+        }
+    }
+    private(set) var walkingStatus = ""
+
+    func resetDesktopInput() { desktopMovement.reset() }
+
+    func resetMovementInput() {
+        resetMeleeInput()
+        desktopMovement.reset()
+        phoneWalking.rebase()
+        pendingPosition = nil
+        lastPositionArrival = nil
+    }
+
+    func recenterMovement() {
+        resetMeleeInput()
+        room.centerView()
+        phoneWalking.reset()
+        pendingPosition = nil
+        desktopMovement.reset()
+    }
+
+    func updateDesktopMovement(_ input: DesktopMovementInput, deltaTime: TimeInterval) {
+        let canMove =
+            simulationActive && !room.isHeadTracked && room.errorMessage == nil
+            && runSnapshot.hasStarted && runSnapshot.countdownRemaining <= 0 && !runSnapshot.isGameOver
+        var accepted = desktopMovement.update(input, enabled: canMove)
+        if phoneWalkingEnabled { accepted.move = .zero }
+        room.moveDesktop(accepted, deltaTime: deltaTime)
+    }
+
+    private func receivePosition(_ input: WandInput) {
+        guard let position = input.position else { return }
+        let now = CACurrentMediaTime()
+        if let lastPositionArrival, now - lastPositionArrival > 0.3 { phoneWalking.rebase() }
+        lastPositionArrival = now
+        // Preserve quality and origin changes while coalescing buffered position samples.
+        if position.quality != .tracking
+            || (pendingPosition != nil && pendingPosition?.position?.session != position.session)
+        {
+            phoneWalking.rebase()
+        }
+        pendingPosition = input
+    }
+
+    func updatePhoneMovement() {
+        guard let input = pendingPosition, let position = input.position else { return }
+        pendingPosition = nil
+        let enabled =
+            phoneWalkingEnabled && simulationActive && !isHolding
+            && CACurrentMediaTime() >= meleeWalkingSuspendedUntil
+            && runSnapshot.hasStarted && runSnapshot.countdownRemaining <= 0 && !runSnapshot.isGameOver
+        let displacement = phoneWalking.update(
+            position, at: input.timestamp, viewHeading: room.viewHeading, enabled: enabled)
+        room.movePlayer(by: displacement)
+        let next: String
+        switch position.quality {
+        case .tracking: next = enabled ? "Phone walking on · camera facing forward" : "Phone walking paused"
+        case .suspended: next = "Phone walking paused · lower the wand to your torso"
+        case .limited: next = "Phone walking paused · point camera at a well-lit room"
+        case .unavailable: next = "Phone walking unavailable · check camera permission"
+        }
+        if walkingStatus != next {
+            walkingStatus = next
+            onState?()
+        }
+    }
 
     init(startsImmediately: Bool = false, defaults: UserDefaults? = .standard) {
         self.startsImmediately = startsImmediately
@@ -70,6 +156,10 @@ final class Encounter: NSObject {
 
     /// Input times belong to the controller clock. Never mix them with the Mac simulation clock.
     func receive(_ input: WandInput) {
+        if input.kind == .position {
+            receivePosition(input)
+            return
+        }
         if input.kind == .restartRun {
             restartRun()
             return
@@ -78,11 +168,14 @@ final class Encounter: NSObject {
             resetScores()
             return
         }
-        // Idle motion positions the setup pointer without beginning a spell or changing a choice.
+        // Idle motion aims the wand and can strike only during unheld wand play.
         if input.kind == .sample, input.gesture == 0 {
             guard clock != nil, simulationActive, activeGesture == nil, !runSnapshot.isGameOver,
                 room.errorMessage == nil
-            else { return }
+            else {
+                resetMeleeInput()
+                return
+            }
             if let yaw = input.yaw, let pitch = input.pitch, yaw.isFinite, pitch.isFinite {
                 remoteAngles = SIMD2(yaw, pitch)
                 lastIdleMotionAt = CACurrentMediaTime()
@@ -91,6 +184,20 @@ final class Encounter: NSObject {
                 lastIdleMotionAt = nil
             }
             stage.aimWand(angles: runSnapshot.hasStarted ? remoteAngles : setupAngles)
+            let enabled =
+                fightingMode == .wand && !isHolding
+                && runSnapshot.hasStarted && runSnapshot.countdownRemaining <= 0
+            if wandMelee.sample(angles: remoteAngles, at: input.timestamp, enabled: enabled),
+                combat.melee(toward: stage.aimedWorldPoint())
+            {
+                // Arm swings must not become experimental walking displacement.
+                meleeWalkingSuspendedUntil = CACurrentMediaTime() + 0.5
+                phoneWalking.rebase()
+                pendingPosition = nil
+                lastPositionArrival = nil
+                stage.animateMelee()
+                setStatus("Wand strike. Wave again, or hold to draw a spell.")
+            }
             return
         }
         if input.kind == .nextSetupChoice || input.kind == .confirmSetupChoice || input.kind == .startRun {
@@ -149,12 +256,14 @@ final class Encounter: NSObject {
             if let value = input.command, let command = VoiceCommand(rawValue: value) { handleVoice(command) }
         case .sceneMode:
             if let enabled = input.seeThrough { setSeeThrough(enabled) }
-        case .restartRun, .resetScores, .startRun, .nextSetupChoice, .confirmSetupChoice:
+        case .restartRun, .resetScores, .startRun, .nextSetupChoice, .confirmSetupChoice, .position:
             break
         }
     }
 
     func controllerDisconnected() {
+        wandMelee.reset(newController: true)
+        resetMovementInput()
         cancelDrawing()
         activeGesture = nil
         remoteAngles = nil
@@ -199,13 +308,10 @@ final class Encounter: NSObject {
             switch event {
             case .waveCleared(let wave):
                 self.stage.announce(
-                    title: "Wave \(wave) cleared!", detail: "+250 bonus score · The next wave is approaching")
+                    title: "Level \(wave) cleared!", detail: "+250 bonus score · Next level in 20 seconds")
             case .waveStarted(let wave):
-                self.stage.announce(title: "Wave \(wave)", detail: "Survive the horde")
-            case .levelUp(let level, let health, let mana):
                 self.stage.announce(
-                    title: "Level \(level)!",
-                    detail: "Max HP \(health) · Max mana \(mana)\nHealth restored · Mana refilled")
+                    title: "Level \(wave)", detail: "Survive the horde · Health and mana full")
             }
         }
         combat.setPaused(!simulationActive)
@@ -218,13 +324,18 @@ final class Encounter: NSObject {
     }
 
     func stop() {
+        resetMovementInput()
         clock?.invalidate()
         clock = nil
         Task { await audio.stop() }
         cancelDrawing()
+        activeGesture = nil
+        remoteAngles = nil
+        lastIdleMotionAt = nil
     }
 
     func beginDrawing() {
+        resetMeleeInput()
         guard clock != nil, simulationActive, !runSnapshot.isGameOver,
             runSnapshot.hasStarted, runSnapshot.countdownRemaining <= 0,
             !isHolding, room.errorMessage == nil
@@ -234,7 +345,9 @@ final class Encounter: NSObject {
             setStatus("Lift to release an arrow.")
             return
         }
-        spell.begin(at: room.castingPoint(), angles: remoteAngles, time: inputTime)
+        stage.aimWand(angles: remoteAngles)
+        spell.begin(at: stage.aimedWorldPoint(distance: 2), angles: remoteAngles, time: inputTime)
+        stage.showRune(points: spell.trace, at: spell.point)
         setStatus("Drawing. Lift your finger to cast.")
     }
 
@@ -279,6 +392,7 @@ final class Encounter: NSObject {
     }
 
     func cancelDrawing() {
+        resetMeleeInput()
         guard isHolding else { return }
         bowHeld = false
         spell.cancel()
@@ -298,6 +412,8 @@ final class Encounter: NSObject {
         let delta = min(0.05, max(0, now - (lastAnnouncementTime ?? now)))
         lastAnnouncementTime = now
         if simulationActive {
+            updateDesktopMovement(desktopInput?() ?? DesktopMovementInput(), deltaTime: delta)
+            updatePhoneMovement()
             combat.update(at: now)
             if !runSnapshot.isGameOver { stage.advanceAnnouncements(deltaTime: delta) }
         }
@@ -340,6 +456,9 @@ final class Encounter: NSObject {
         remoteAngles = nil
         lastIdleMotionAt = nil
         spell = Spell()
+        resetMovementInput()
+        phoneWalking.reset()
+        room.resetPlayerPosition()
         setupStep = "world"
         stage.clearSetupPointer()
         stage.clearAnnouncements()
@@ -352,6 +471,7 @@ final class Encounter: NSObject {
     private func runDidChange() {
         room.setTransfigurationPhase(combat.transfigurationPhase)
         if runSnapshot.isGameOver {
+            resetMovementInput()
             stage.clearAnnouncements()
             cancelDrawing()
             activeGesture = nil
@@ -374,6 +494,12 @@ final class Encounter: NSObject {
         let remaining = runSnapshot.nyanRemaining
         let paused = !simulationActive || runSnapshot.isGameOver
         Task { await audio.syncNyan(remaining: remaining, paused: paused) }
+    }
+
+    private func resetMeleeInput() {
+        meleeWalkingSuspendedUntil = 0
+        wandMelee.reset()
+        stage.resetMelee()
     }
 
     private var canConfigureSetup: Bool {

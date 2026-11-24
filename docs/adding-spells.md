@@ -80,12 +80,36 @@ Changing an existing spell's voice aliases requires no parser switch.
 Keep normalized aliases unique across spells and weapon commands.
 The `cast` and `shoot` commands remain weapon selectors.
 
-The accepted gesture families are loose Z or lightning zigzags, open O or oval shapes, uneven V shapes, stars, and W shapes.
+The accepted gesture families are loose Z or lightning zigzags, broad open O or oval shapes, uneven V shapes, stars, and W shapes.
 W recognition accepts shallow or rounded valleys and uneven arms in either drawing direction.
 It still requires two distinct valleys, so a V or extra waves do not become Nyan.
+Fire also accepts angular loops, thin ovals, and large gaps.
+The star, V, and W families remain separate.
 Holding still for about one second charges Shield.
 Only release casts the prepared spell.
+Touch-down starts the held drawing at the current phone aim, without moving the wand to the centre.
+Idle wand swings use a separate melee detector, deal 1 damage, and cannot spend mana or recognize a rune.
 Nyan also accepts `Nyan`, `summon nyan`, and `nyan cat` by voice.
+
+## Preserve survival rules
+
+The level identifies the current stage, not XP progression.
+Each stage contains eight zombies with 2 HP each, spawning eight seconds apart.
+Kills award 100 score each and do not award XP or advance the level.
+Clearing a stage awards 250 score and starts a twenty-second break.
+When the next stage begins, maximum HP and MP each increase by 10 and both resources refill completely.
+The run starts at 100 HP and 100 MP.
+Mana regenerates at 4 MP per simulation second after a two-second delay from spending.
+Keep internal `wave` and `bestWave` wire and storage keys for compatibility.
+
+Zombie attacks, wand melee, arrows, and physical ally attacks each deal 1 damage.
+Lightning, ice, and devil fire breath each deal 2 damage.
+Fireball shares 5 total damage across a 3-metre blast, weighted toward victims near the centre.
+Preserve fractional zombie HP when distributing that damage.
+Shield costs 20 MP, starts with 20 shield HP, has no expiry, and has a ten-second cooldown.
+Neither duplicate casting nor a stage transition refills an active shield.
+The winged devil flies, and Patronus follows a curved run from the lower-right foreground.
+Patronus applies a fifteen-second slow and then vanishes.
 
 ## Verify the change
 

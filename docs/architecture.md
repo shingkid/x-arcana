@@ -3,6 +3,7 @@
 The Mac owns the scene, simulation clock, enemies, allies, resources, and saved records.
 The iPhone owns touch, motion, speech recognition, and controller feedback.
 The Air 2 receives video directly from the Mac.
+The Mac also accepts local keyboard movement and optional ARKit phone-position samples.
 
 ```mermaid
 flowchart LR
@@ -27,12 +28,14 @@ flowchart LR
 | `Encounter` | Run/setup transitions and spell dispatch |
 | `SpellCatalog` | Required spell components and shared invocation metadata |
 | `Combat` | Spawn timing, contacts, projectiles, damage, rewards, simulation time |
-| `SurvivalState` | HP, MP, XP, levels, score, persistent best records |
+| `SurvivalState` | HP, MP, stage level, score, persistent best records |
 | `SummonCombat` | Explicit allies, health, attack timing, exclusivity, status effects |
 | `GameWorld` | Environment, camera, head pose, AR visibility, room effects |
 | `GameStage` | SceneKit rendering, wand, HUD, setup, game-over views |
 | `SpellAudio` | Mixing and simulation-timed music |
 | `CharacterAnimation` | Weighted rigs and independent skeletal playback |
+| `PlayerMovement` | Keyboard movement, measured phone translation, calibration, and jump rejection |
+| `PhonePositionTracking` | Opt-in ARKit session, camera permission, tracking quality, and gesture suspension |
 
 ## Simulation rules
 
@@ -41,7 +44,28 @@ Animations never independently decide damage.
 The controller cannot set health, mana, score, or enemy state.
 Reconnection resumes the same run and cancels stale held gestures.
 Game-over stops combat while head tracking continues.
-Each zombie awards score and XP once.
+Each zombie awards 100 score once and does not grant XP.
+A stage contains eight zombies with 2 HP each, spawning eight seconds apart.
+Clearing a stage awards 250 score and starts a twenty-second break.
+The level counts stages, starting at level 1.
+At the beginning of each subsequent stage, both resource maximums increase by 10 and HP and MP refill completely.
+Clearing the stage does not trigger that refill.
+The run starts with 100 HP and 100 MP.
+Mana regenerates at 4 MP per simulation second after a two-second delay from spending.
+Touch-down captures the current wand aim as the drawing origin, without moving it to the centre.
+Zombie health retains fractions so fireball can divide its 5-damage budget among all blast victims.
+Distance-based weights give nearer victims a larger share.
+Zombie swipes and bites each deal 1 damage.
+Wand melee, arrows, and physical ally attacks each deal 1 damage.
+Lightning, ice, and devil fire breath each deal 2 damage.
+Fireball divides 5 total damage across victims within a 3-metre blast.
+Shield health absorbs damage before player health and has no duration.
+A shield starts with 20 HP, costs 20 MP, and has a ten-second cooldown.
+An active shield cannot be recast for a refill, and stage transitions do not refill it.
+The devil is a winged flying ally.
+Patronus runs on a curved path from the lower-right foreground, applies a fifteen-second slow, then vanishes.
+Idle wand motion triggers a short-range melee contact through the same authoritative combat state.
+Held drawing, setup, countdowns, pauses, and weapon changes suppress or reset melee recognition.
 An incompatible summon removes existing allies only after availability and mana checks pass.
 
 Rune and voice input share one dispatcher.
@@ -49,6 +73,33 @@ Combat effects remain in the authoritative simulation.
 Accepted casts trigger animation and sound.
 Rejected casts do not perform the accepted animation.
 Timed music follows simulation duration so pauses and restarts cannot leave it playing.
+
+## Player movement
+
+The Mac polls Apple's Game Controller keyboard profile only while its window is active.
+Without head tracking, WASD moves at 1.4 metres per second and arrow keys rotate the view.
+Diagonal input is normalized, eye height stays fixed, and movement stays inside the configured floor bounds extended to include the initial camera position.
+The same camera position drives enemy pursuit, melee reach, projectile origins, and shield placement.
+Restart restores the camera's configured position.
+Paused or restarted keyboard input requires a release before movement resumes.
+
+Phone walking is off by default and controlled by a Mac toolbar toggle.
+The host advertises optional `supportsPhonePosition` and `phoneWalkingEnabled` fields.
+The phone sends the new `position` command only when the host advertises support and enables it.
+Older peers therefore keep their existing commands and service identifiers.
+Continuous position and idle wand samples are coalesced separately, preserving gesture and tracking-state barriers.
+
+ARKit uses the rear camera and motion sensors to measure phone translation at approximately 30 updates per second.
+Images are neither transmitted nor saved by this feature.
+The host aligns the initial camera heading with the game view and applies smoothed horizontal deltas at one metre per metre.
+It suppresses small jitter and rejects stale packets, large jumps, and invalid coordinates.
+Limited or interrupted tracking, gestures, pauses, new origins, and reconnects rebase the position before movement resumes.
+Drawing and the following 0.8 seconds suspend translation.
+Head turns do not rotate an existing positional calibration.
+
+The phone is a handheld tracking reference, so arm motion outside gesture capture can still affect position.
+It is not a substitute for independently measured head position or obstacle detection.
+Air 2 alone supplies no walking translation.
 
 ## Environments and AR
 
@@ -73,6 +124,9 @@ Changing these identifiers requires a migration plan and paired device installat
 They are protocol and storage identifiers, not product names.
 `RuntimeIdentifiers.swift` centralizes app service strings.
 Original third-party titles and attribution are not renamed.
+
+Player-facing levels identify stages, not XP progression.
+Internal `wave` and `bestWave` wire and storage keys remain unchanged for compatibility.
 
 ## Build layout
 

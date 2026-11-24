@@ -122,7 +122,7 @@ final class GameStage: UIView {
             x: (bounds.width - noticeWidth) / 2, y: 80,
             width: noticeWidth, height: 98)
         let hudWidth = min(800, bounds.width - margin * 2)
-        let guideHeight: CGFloat = spellGuide.isHidden ? 0 : 66
+        let guideHeight: CGFloat = spellGuide.isHidden ? 0 : 94
         let guideGap: CGFloat = spellGuide.isHidden ? 0 : 10
         spellGuide.frame = CGRect(
             x: margin, y: bounds.height - margin - guideHeight,
@@ -231,18 +231,20 @@ final class GameStage: UIView {
         wand.update(aim: aim, isDrawing: false)
     }
 
-    func aimedWorldPoint() -> SIMD3<Float> {
+    func aimedWorldPoint(distance: Float = 14) -> SIMD3<Float> {
         let far = renderView.unprojectPoint(
             SCNVector3(
                 Float(aim.x * bounds.width),
                 Float(aim.y * bounds.height), 0.99))
         let direction = SIMD3<Float>(far) - room.camera.simdWorldPosition
         guard simd_length(direction) > 0.001 else { return room.castingPoint() }
-        return room.camera.simdWorldPosition + simd_normalize(direction) * 14
+        return room.camera.simdWorldPosition + simd_normalize(direction) * distance
     }
 
     func animateCast() { wand.cast() }
     func animateShot() { wand.shoot() }
+    func animateMelee() { wand.melee() }
+    func resetMelee() { wand.resetMelee() }
     func setMode(_ mode: WandPresentation.Mode) {
         wand.setMode(mode)
         wandMode = mode == .wand

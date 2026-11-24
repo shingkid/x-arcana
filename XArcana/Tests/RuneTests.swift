@@ -530,6 +530,31 @@ final class RuneTests: XCTestCase {
         }
     }
 
+    func testFireAcceptsLargeGapsThinOvalsAndAngularLoops() {
+        let open = circle(radius: 0.22, phase: 0.5).prefix(66).map { $0 }
+        let narrow = circle(radius: 0.25, jitter: 0.009).map {
+            CGPoint(x: $0.x * 0.24, y: $0.y)
+        }
+        let uneven = circle(radius: 0.2).map {
+            CGPoint(x: $0.x + 0.05 * sin($0.y * 18), y: $0.y * (1 + $0.x))
+        }
+        for (variant, path) in [open, narrow, uneven, polygon(sides: 5)].enumerated() {
+            for reverse in [false, true] {
+                for duration in [0.3, 1.2, 3.5] {
+                    for fps in [30, 60] {
+                        let drawn = reverse ? Array(path.reversed()) : path
+                        var rune = RuneCasting()
+                        rune.begin(angles: .zero, at: 0)
+                        let end = feed(drawn, into: &rune, fps: fps, duration: duration)
+                        XCTAssertEqual(
+                            rune.finish(angles: end, at: duration), .fireball,
+                            "variant \(variant), reverse \(reverse), \(duration)s at \(fps)fps")
+                    }
+                }
+            }
+        }
+    }
+
     func testNothingCapturesWithoutAnExplicitPress() {
         var rune = RuneCasting()
         let end = feed(star(), into: &rune)
@@ -650,8 +675,11 @@ final class RuneTests: XCTestCase {
         let outer = circle()
         let inner = polygon(sides: 5)
         XCTAssertNil(RuneRecognizer.recognize(outer + trace([outer.last!, inner[0]]) + inner))
-        for sides in [3, 4, 5, 6] {
-            XCTAssertNil(RuneRecognizer.recognize(polygon(sides: sides, radius: 0.3)))
+        for sides in [3, 4] {
+            XCTAssertNotEqual(RuneRecognizer.recognize(polygon(sides: sides, radius: 0.3)), .summon)
+        }
+        for sides in [5, 6] {
+            XCTAssertEqual(RuneRecognizer.recognize(polygon(sides: sides, radius: 0.3)), .fireball)
         }
         XCTAssertNil(RuneRecognizer.recognize(star() + trace([star().last!, CGPoint(x: -0.5, y: -0.5)])))
         XCTAssertNil(RuneRecognizer.recognize(star() + star()))
@@ -670,7 +698,7 @@ final class RuneTests: XCTestCase {
         XCTAssertNil(RuneRecognizer.recognize(trace([.zero, CGPoint(x: -0.4, y: -0.5)])))
         XCTAssertEqual(RuneRecognizer.recognize(trace(bolt.reversed())), .zap)
         XCTAssertEqual(RuneRecognizer.recognize(trace(bolt.map { CGPoint(x: -$0.x, y: $0.y) })), .zap)
-        XCTAssertNil(RuneRecognizer.recognize(Array(circle().prefix(65))))
+        XCTAssertEqual(RuneRecognizer.recognize(Array(circle().prefix(65))), .fireball)
     }
 
     func testRandomScribblesAndInvalidDataCannotCast() {

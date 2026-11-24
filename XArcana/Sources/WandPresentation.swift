@@ -10,6 +10,7 @@ final class WandPresentation {
 
     private let camera: SCNNode
     private let wand = SCNNode()
+    private let swing = SCNNode()
     private let bow = SCNNode()
     private let tip = SCNNode()
     private let bowAim = SCNNode()
@@ -29,7 +30,9 @@ final class WandPresentation {
         bow.addChildNode(bowAim)
         buildWand()
         buildBow()
-        camera.addChildNode(wand)
+        swing.name = "wandMeleeSweep"
+        swing.addChildNode(wand)
+        camera.addChildNode(swing)
         camera.addChildNode(bow)
         bow.isHidden = true
         let light = SCNNode()
@@ -50,6 +53,7 @@ final class WandPresentation {
     }
 
     func setMode(_ mode: Mode) {
+        resetMelee()
         self.mode = mode
         wand.isHidden = mode != .wand
         bow.isHidden = mode != .bow
@@ -70,6 +74,28 @@ final class WandPresentation {
     func cast() {
         tip.removeAction(forKey: "cast")
         tip.runAction(.sequence([.scale(to: 2.8, duration: 0.07), .scale(to: 1, duration: 0.3)]), forKey: "cast")
+    }
+
+    func melee() {
+        guard mode == .wand else { return }
+        resetMelee()
+        swing.runAction(
+            .sequence([
+                .group([
+                    .rotateBy(x: 0.14, y: -0.18, z: 0.55, duration: 0.10),
+                    .moveBy(x: -0.07, y: 0.02, z: -0.04, duration: 0.10),
+                ]),
+                .group([
+                    .rotateTo(x: 0, y: 0, z: 0, duration: 0.24),
+                    .move(to: SCNVector3Zero, duration: 0.24),
+                ]),
+            ]), forKey: "melee")
+    }
+
+    func resetMelee() {
+        swing.removeAction(forKey: "melee")
+        swing.position = SCNVector3Zero
+        swing.eulerAngles = SCNVector3Zero
     }
 
     func shoot() {

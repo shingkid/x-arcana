@@ -276,12 +276,12 @@ enum RuneRecognizer {
             let bounds = LightningRune.bounds(points),
             min(bounds.width, bounds.height) >= 0.045
         else { return false }
-        return LightningRune.distance(first, last) < max(bounds.width, bounds.height) * 0.72
+        return LightningRune.distance(first, last) < max(bounds.width, bounds.height) * 1.02
     }
 
     private static func circle(_ points: [CGPoint]) -> Bool {
         guard almostClosed(points), let bounds = LightningRune.bounds(points),
-            min(bounds.width, bounds.height) > 0.28 * max(bounds.width, bounds.height)
+            min(bounds.width, bounds.height) > 0.18 * max(bounds.width, bounds.height)
         else { return false }
         // Normalize width and height separately so a wrist-drawn oval counts as a circle.
         let oval = points.map {
@@ -294,7 +294,7 @@ enum RuneRecognizer {
         let radii = samples.map { LightningRune.distance($0, center) }
         let radius = radii.reduce(0, +) / CGFloat(radii.count)
         let error = sqrt(radii.reduce(0) { $0 + pow($1 - radius, 2) } / CGFloat(radii.count))
-        guard error < radius * 0.28, radii.allSatisfy({ abs($0 - radius) < radius * 0.52 }) else { return false }
+        guard error < radius * 0.34, radii.filter({ $0 < radius * 0.38 }).count <= 3 else { return false }
         var rotation: CGFloat = 0
         var travel: CGFloat = 0
         for i in 1..<samples.count {
@@ -304,8 +304,9 @@ enum RuneRecognizer {
             rotation += delta
             travel += abs(delta)
         }
-        return abs(rotation) > 4.3 && abs(rotation) < 7.6 && travel - abs(rotation) < 0.9
-            && vertices(samples, tolerance: radius * 0.085).count >= 7
+        // A broad C, a lopsided oval, or an angular loop is enough; straight V/Z/W strokes stay distinct.
+        return abs(rotation) > 3.85 && abs(rotation) < 8.0 && travel - abs(rotation) < 1.65
+            && vertices(samples, tolerance: radius * 0.085).count >= 5
     }
 
     private static func summon(_ points: [CGPoint]) -> Bool {

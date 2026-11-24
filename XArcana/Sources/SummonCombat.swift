@@ -25,6 +25,10 @@ final class SummonCombat {
         var breathCooldown: TimeInterval = 0.7
         var attack: PendingAttack?
         var chargeDestination: SIMD3<Float>?
+        var chargeStart: SIMD3<Float>?
+        var chargeControl: SIMD3<Float>?
+        var chargeDuration: TimeInterval = 0
+        var chargeElapsed: TimeInterval = 0
         var lifetime: TimeInterval = 0
         var touched: Set<ObjectIdentifier> = []
         var expired = false
@@ -51,7 +55,13 @@ final class SummonCombat {
     private let environment: EnvironmentDefinition
     private let scene: SCNScene
     private(set) var companions: [Companion] = []
-    private var retiring: [SCNNode] = []
+    private struct RetiringCompanion {
+        let node: SCNNode
+        let opacity: CGFloat
+        var remaining: TimeInterval = 0.3
+    }
+    private var retiring: [RetiringCompanion] = []
+    private var isPaused = false
     var physicalTargets: [Target] {
         companions.filter { $0.kind != .patronus && $0.health > 0 && !$0.expired && $0.node.parent != nil }
             .map { Target(node: $0.node, center: $0.center) }
@@ -75,13 +85,21 @@ final class SummonCombat {
         if node.parent == nil { scene.rootNode.addChildNode(node) }
         let companion = Companion(kind: kind, node: node)
         companions.append(companion)
-        node.simdWorldPosition = bounded(node.simdWorldPosition)
+        if kind == .patronus {
+            // The entry follows the current camera, including positions outside the original aisle.
+            node.simdWorldPosition.y = environment.floorY
+        } else {
+            node.simdWorldPosition = bounded(node.simdWorldPosition)
+        }
         if kind != .patronus { addHealthLabel(to: companion) }
         animate(companion, name: kind == .patronus ? "run" : "idle", loop: true)
+        if kind == .demon { updateFlight(companion) }
     }
 
     func setPaused(_ paused: Bool) {
-        for node in companions.map(\.node) + retiring {
+        isPaused = paused
+        let effects = scene.rootNode.childNodes.filter { $0.name == "CompanionAttack" }
+        for node in companions.map(\.node) + retiring.map(\.node) + effects {
             node.isPaused = paused
             CharacterAnimation.setPaused(paused, on: node)
         }
@@ -95,8 +113,9 @@ final class SummonCombat {
     }
 
     func reset() {
-        for node in retiring { node.removeFromParentNode() }
+        for item in retiring { item.node.removeFromParentNode() }
         retiring.removeAll()
+        isPaused = false
         for ally in companions { ally.node.removeFromParentNode() }
         companions.removeAll()
         for node in scene.rootNode.childNodes where node.name == "CompanionAttack" { node.removeFromParentNode() }
@@ -121,9 +140,15 @@ final class SummonCombat {
     }
 
     func update(deltaTime: TimeInterval, targets: [Target]) -> [Impact] {
-        guard deltaTime.isFinite, deltaTime > 0 else { return [] }
+        guard !isPaused, deltaTime.isFinite, deltaTime > 0 else { return [] }
         let dt = min(0.05, deltaTime)
-        retiring.removeAll { $0.parent == nil }
+        for index in retiring.indices {
+            retiring[index].remaining -= dt
+            let item = retiring[index]
+            item.node.opacity = item.opacity * CGFloat(max(0, item.remaining / 0.3))
+            if item.remaining <= 0 { item.node.removeFromParentNode() }
+        }
+        retiring.removeAll { $0.node.parent == nil }
         companions.removeAll { $0.expired || $0.node.parent == nil || ($0.kind != .patronus && $0.health == 0) }
         var seen: Set<ObjectIdentifier> = []
         let enemies = targets.filter {
@@ -133,6 +158,7 @@ final class SummonCombat {
         var impacts: [Impact] = []
         for ally in companions {
             ally.lifetime += dt
+            defer { if ally.kind == .demon { updateFlight(ally) } }
             if ally.kind == .patronus {
                 impacts += charge(ally, dt: dt, targets: enemies)
                 continue
@@ -161,7 +187,7 @@ final class SummonCombat {
             }
             let gap = distance(ally.center, nearest.center)
             face(ally.node, toward: nearest.center)
-            animate(ally, name: gap > 1 ? "walk" : "idle", loop: true)
+            animate(ally, name: gap > 1 && ally.kind != .demon ? "walk" : "idle", loop: true)
             if gap > 1 {
                 move(
                     ally.node, toward: nearest.center, speed: ally.kind == .demon ? 1.05 : 0.9, stoppingAt: 0.95, dt: dt
@@ -215,7 +241,7 @@ final class SummonCombat {
                 return length <= 3 && (length < 0.001 || simd_dot(offset / length, forward) >= 0.7071)
             }
         }
-        let amount = attack.style == .slam || attack.style == .breath ? 2 : 1
+        let amount = attack.style == .breath ? 2 : 1
         return victims.map { Impact(node: $0.node, damage: amount, slowDuration: 0) }
     }
 
@@ -226,26 +252,35 @@ final class SummonCombat {
         }
         if ally.chargeDestination == nil {
             // Stable ordering breaks ties and makes the chosen cluster repeatable.
-            var largest: Target?
-            var count = 0
+            var cluster: [Target] = []
             for candidate in targets {
-                let nearby = targets.filter { distance(candidate.center, $0.center) <= 1.8 }.count
-                if nearby > count {
-                    count = nearby
-                    largest = candidate
-                }
+                let nearby = targets.filter { distance(candidate.center, $0.center) <= 1.8 }
+                if nearby.count > cluster.count { cluster = nearby }
             }
-            guard let largest else { return [] }
-            var direction = largest.center - ally.center
+            guard !cluster.isEmpty else { return [] }
+            let center = cluster.reduce(SIMD3<Float>.zero) { $0 + $1.center } / Float(cluster.count)
+            let start = ally.node.simdWorldPosition
+            var direction = center - start
             direction.y = 0
             let length = simd_length(direction)
             direction = length > 0.001 ? direction / length : SIMD3(0, 0, -1)
-            ally.chargeDestination = bounded(largest.center + direction * 1.8)
+            let destination = bounded(center + direction * 1.8)
+            let side = SIMD3<Float>(-direction.z, 0, direction.x)
+            ally.chargeStart = start
+            ally.chargeControl = (start + destination) * 0.5 + side * 0.55
+            ally.chargeDestination = destination
+            ally.chargeDuration = min(2.6, max(1.1, Double(distance(start, destination) / 4.2)))
         }
-        guard let destination = ally.chargeDestination else { return [] }
+        guard let startPoint = ally.chargeStart, let control = ally.chargeControl,
+            let destination = ally.chargeDestination
+        else { return [] }
         let start = ally.center
-        face(ally.node, toward: destination)
-        move(ally.node, toward: destination, speed: 4, stoppingAt: 0, dt: dt)
+        ally.chargeElapsed += dt
+        let t = Float(min(1, ally.chargeElapsed / ally.chargeDuration))
+        let position = startPoint * (1 - t) * (1 - t) + control * 2 * (1 - t) * t + destination * t * t
+        let tangent = (control - startPoint) * (1 - t) + (destination - control) * t
+        face(ally.node, toward: ally.node.simdWorldPosition + tangent)
+        ally.node.simdWorldPosition = position
         let end = ally.center
         let contacts = targets.filter {
             !ally.touched.contains(ObjectIdentifier($0.node)) && segmentDistance($0.center, from: start, to: end) <= 1
@@ -254,15 +289,15 @@ final class SummonCombat {
             ally.touched.insert(ObjectIdentifier(target.node))
             showPulse(at: target.center, radius: 0.7, color: .cyan)
         }
-        if distance(ally.center, destination) <= 0.15 { dissolve(ally) }
+        if t >= 1 { dissolve(ally) }
         return contacts.map { Impact(node: $0.node, damage: 0, slowDuration: 15) }
     }
 
     private func dissolve(_ ally: Companion) {
         ally.expired = true
-        retiring.append(ally.node)
+        retiring.append(RetiringCompanion(node: ally.node, opacity: ally.node.opacity))
         CharacterAnimation.stop(on: ally.node)
-        ally.node.runAction(.sequence([.fadeOut(duration: 0.3), .removeFromParentNode()]), forKey: "dissolve")
+        ally.node.removeAllActions()
     }
 
     private func segmentDistance(_ point: SIMD3<Float>, from start: SIMD3<Float>, to end: SIMD3<Float>) -> Float {
@@ -329,7 +364,19 @@ final class SummonCombat {
     private func animate(_ ally: Companion, name: String, loop: Bool) {
         guard ally.animation != name else { return }
         ally.animation = name
-        CharacterAnimation.play(name, on: ally.node, speed: 1, loop: loop)
+        if ally.kind == .demon {
+            // Flight and attack poses share the simulation clock and never play the walking cycle.
+            CharacterAnimation.stop(on: ally.node)
+        } else {
+            CharacterAnimation.play(name, on: ally.node, speed: 1, loop: loop)
+        }
+    }
+
+    private func updateFlight(_ ally: Companion) {
+        let elapsed = ally.attack?.elapsed ?? 0
+        let sampleTime = ally.attack == nil ? ally.lifetime.truncatingRemainder(dividingBy: 2.4) : elapsed
+        _ = CharacterAnimation.sample(ally.animation, at: sampleTime, on: ally.node)
+        DemonFlight.sample(on: ally.node, time: ally.lifetime, slamTime: ally.attack?.style == .slam ? elapsed : nil)
     }
 
     private func addHealthLabel(to ally: Companion) {

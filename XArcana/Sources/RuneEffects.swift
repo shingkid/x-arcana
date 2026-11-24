@@ -96,6 +96,7 @@ enum RuneEffects {
         scene.rootNode.addChildNode(portal)
         demon.name = "DemonSculpture"
         portal.addChildNode(demon)
+        DemonFlight.install(on: demon)
         addSummonLight(to: portal, color: UIColor(red: 1, green: 0.48, blue: 0.27, alpha: 1))
 
         let ring = part(
@@ -108,16 +109,8 @@ enum RuneEffects {
                     .fadeOut(duration: 0.9),
                 ]), .removeFromParentNode(),
             ]))
-        demon.opacity = 0
-        if UIAccessibility.isReduceMotionEnabled {
-            demon.runAction(.fadeIn(duration: 0.3))
-        } else {
-            demon.simdPosition.y = -0.13
-            let rise = SCNAction.moveBy(x: 0, y: 0.13, z: 0, duration: 0.65)
-            rise.timingMode = .easeOut
-            demon.runAction(.group([rise, .fadeIn(duration: 0.5)]))
-        }
-        CharacterAnimation.play("idle", on: portal, loop: true)
+        _ = CharacterAnimation.sample("idle", at: 0, on: portal)
+        DemonFlight.sample(on: portal, time: 0)
         return portal
     }
 
@@ -222,16 +215,19 @@ enum RuneEffects {
     @discardableResult
     static func patronus(in scene: SCNScene, at target: SIMD3<Float>, from camera: SCNNode) -> SCNNode? {
         guard let stag = summonModel(named: "Stag") else { return nil }
-        let count = scene.rootNode.childNodes.filter { $0.name == "Patronus" }.count
         let guardian = SCNNode()
         guardian.name = "Patronus"
         guardian.categoryBitMask = 2
-        guardian.simdPosition = summonFloorPosition(
-            in: scene, target: target,
-            viewer: camera.simdWorldPosition, count: count)
-        let towardViewer = camera.simdWorldPosition - guardian.simdPosition
-        // A slight three-quarter view makes the head, chest, four legs and antlers readable together.
-        guardian.eulerAngles.y = atan2(towardViewer.x, towardViewer.z) - 0.32
+        var forward = camera.simdWorldFront
+        forward.y = 0
+        forward = simd_length_squared(forward) > 0.001 ? simd_normalize(forward) : SIMD3(0, 0, -1)
+        let right = SIMD3<Float>(-forward.z, 0, forward.x)
+        // Enter beside the player instead of materializing in the enemy cluster.
+        var entry = camera.simdWorldPosition + right * 1.25 + forward * 1.65
+        entry.y = 0
+        guardian.simdWorldPosition = entry
+        let direction = target - entry
+        guardian.eulerAngles.y = atan2(direction.x, direction.z)
         scene.rootNode.addChildNode(guardian)
         stag.name = "SilverStag"
         guardian.addChildNode(stag)
@@ -239,9 +235,7 @@ enum RuneEffects {
 
         addPatronusWisps(to: guardian)
         guardian.addChildNode(ScenePerformance.independentClone(of: mistTemplate))
-        guardian.opacity = 0
-        guardian.runAction(.fadeIn(duration: 0.6))
-        CharacterAnimation.play("idle", on: guardian, loop: true)
+        CharacterAnimation.play("run", on: guardian, speed: 1, loop: true)
         return guardian
     }
 
@@ -874,6 +868,10 @@ enum SpellVisuals {
         case .alan: tone = .spirit
         }
         let root = effect("CompanionAttack", at: actor.simdPosition + SIMD3(0, 0.025, 0), on: parent, lifetime: 1.25)
+        if kind == .patronus {
+            particles(tone: .frost, count: 70, life: 0.45, speed: 0.35, spread: 90, on: root)
+            return
+        }
         if let accent = SpellVFX.card(kind == .patronus ? .shield : .summon, size: 1.9, duration: 1) {
             accent.constraints = []
             accent.eulerAngles.x = -.pi / 2
@@ -901,5 +899,119 @@ enum SpellVisuals {
         column.eulerAngles.x = -.pi / 2
         root.addChildNode(column)
         particles(tone: tone, count: 180, life: 0.7, speed: 1.5, spread: 65, on: column)
+    }
+}
+
+/// Small runtime accessories preserve the licensed body mesh and its weighted skeleton.
+enum DemonFlight {
+    static func install(on body: SCNNode) {
+        guard body.childNode(withName: "DevilWing.L", recursively: true) == nil else { return }
+        let membrane = SCNMaterial()
+        membrane.name = "Devil wing membrane"
+        membrane.diffuse.contents = UIColor(red: 0.32, green: 0.045, blue: 0.03, alpha: 1)
+        membrane.emission.contents = UIColor(red: 0.18, green: 0.026, blue: 0.019, alpha: 1)
+        membrane.lightingModel = .physicallyBased
+        membrane.roughness.contents = 0.9
+        membrane.isDoubleSided = false
+        let bone = SCNMaterial()
+        bone.diffuse.contents = UIColor(red: 0.11, green: 0.07, blue: 0.055, alpha: 1)
+        bone.roughness.contents = 0.75
+        for (name, side) in [("L", Float(1)), ("R", Float(-1))] {
+            let mount = SCNNode()
+            mount.name = "DevilWingMount." + name
+            mount.categoryBitMask = 2
+            mount.simdPosition = SIMD3(side * 0.2, 1.5, -0.22)
+            body.addChildNode(mount)
+            let wing = SCNNode()
+            wing.name = "DevilWing." + name
+            wing.categoryBitMask = 2
+            mount.addChildNode(wing)
+            let anchors: [SIMD3<Float>] = [
+                SIMD3(0, 0, 0), SIMD3(0.43, 0.47, -0.05), SIMD3(1.05, 0.64, -0.1),
+                SIMD3(1.4, 0.12, -0.13), SIMD3(1.02, -0.04, -0.07), SIMD3(0.95, -0.43, 0),
+                SIMD3(0.62, -0.23, 0.03), SIMD3(0.4, -0.53, 0.04), SIMD3(0.2, -0.25, 0.02),
+            ].map { SIMD3($0.x * side, $0.y, $0.z) }
+            var outline = [anchors[0]]
+            func curve(_ start: Int, _ control: SIMD3<Float>, _ end: Int, steps: Int) {
+                for step in 1...steps {
+                    let t = Float(step) / Float(steps)
+                    let point = anchors[start] * (1 - t) * (1 - t) + control * 2 * (1 - t) * t + anchors[end] * t * t
+                    outline.append(point)
+                }
+            }
+            curve(0, anchors[1], 2, steps: 4)
+            curve(2, (anchors[2] + anchors[3]) * 0.5, 3, steps: 3)
+            curve(3, anchors[4], 5, steps: 5)
+            curve(5, anchors[6], 7, steps: 5)
+            curve(7, anchors[8], 0, steps: 4)
+            outline.removeLast()
+            let vertices = (outline + outline).map { SCNVector3($0) }
+            let count = Int32(outline.count)
+            var indices: [Int32] = []
+            for index in 1..<(outline.count - 1) {
+                let next = Int32(index + 1)
+                indices += [0, Int32(index), next, count, count + next, count + Int32(index)]
+            }
+            // Separate faces provide correct lighting from either side of the moving membrane.
+            let normals =
+                Array(repeating: SCNVector3(0, 0, -side), count: outline.count)
+                + Array(repeating: SCNVector3(0, 0, side), count: outline.count)
+            let geometry = SCNGeometry(
+                sources: [SCNGeometrySource(vertices: vertices), SCNGeometrySource(normals: normals)],
+                elements: [SCNGeometryElement(indices: indices, primitiveType: .triangles)])
+            geometry.materials = [membrane]
+            let skin = SCNNode(geometry: geometry)
+            skin.name = "DevilWingMembrane"
+            skin.categoryBitMask = 2
+            skin.castsShadow = true
+            wing.addChildNode(skin)
+            for index in [2, 3, 5, 7] {
+                let end = anchors[index]
+                let strut = SCNCylinder(radius: index == 2 ? 0.021 : 0.012, height: CGFloat(simd_length(end)))
+                strut.radialSegmentCount = 5
+                strut.heightSegmentCount = 1
+                strut.materials = [bone]
+                let finger = SCNNode(geometry: strut)
+                finger.name = "DevilWingFinger"
+                finger.categoryBitMask = 2
+                finger.simdPosition = end * 0.5
+                finger.simdOrientation = simd_quatf(from: SIMD3(0, 1, 0), to: simd_normalize(end))
+                wing.addChildNode(finger)
+            }
+            CharacterAnimation.attach(mount, to: "chest", on: body)
+        }
+    }
+
+    static func sample(on actor: SCNNode, time: TimeInterval, slamTime: TimeInterval? = nil) {
+        guard let body = actor.childNode(withName: "DemonSculpture", recursively: true) else { return }
+        let phase = Float(time) * 5.8
+        let hover: Float = UIAccessibility.isReduceMotionEnabled ? 0.6 : 0.6 + sin(phase) * 0.065
+        var height = hover
+        if let slamTime {
+            // The body meets the floor at the authoritative slam contact, then climbs back up.
+            let t = Float(slamTime)
+            let lift = t < 0.35 ? max(0, 1 - t / 0.35) : min(1, (t - 0.35) / 0.4)
+            height = 0.025 + (hover - 0.025) * lift
+        }
+        body.simdPosition.y = height
+        body.simdEulerAngles.x = -0.12 * min(1, height / 0.6)
+        let tuck = min(1, height / 0.5)
+        for side in ["L", "R"] {
+            // CharacterAnimation samples a fresh pose before these additive flight adjustments.
+            for (joint, bend) in [("thigh", Float(-0.38)), ("shin.Top", Float(0.75)), ("foot", Float(-0.25))] {
+                let bone =
+                    body.childNode(withName: joint + "." + side, recursively: true)
+                    ?? body.childNode(
+                        withName: joint.replacingOccurrences(of: ".", with: "_") + "_" + side, recursively: true)
+                bone?.simdOrientation =
+                    (bone?.simdOrientation ?? simd_quatf(angle: 0, axis: SIMD3(1, 0, 0)))
+                    * simd_quatf(angle: bend * tuck, axis: SIMD3(1, 0, 0))
+            }
+            let wing = body.childNode(withName: "DevilWing." + side, recursively: true)
+            let direction: Float = side == "L" ? 1 : -1
+            let flap: Float = UIAccessibility.isReduceMotionEnabled ? 0.12 : 0.12 + sin(phase) * 0.38
+            wing?.simdEulerAngles.z = direction * flap
+            wing?.simdEulerAngles.y = direction * -0.2
+        }
     }
 }

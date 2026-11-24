@@ -17,7 +17,7 @@ final class CombatTests: XCTestCase {
         let enemies = combatants(in: scene)
         XCTAssertEqual(enemies.count, 8)
         XCTAssertEqual(combat.pendingSpawns, 0)
-        XCTAssertTrue(enemies.allSatisfy { $0.kind == .zombie && $0.health == 3 })
+        XCTAssertTrue(enemies.allSatisfy { $0.kind == .zombie && $0.health == 2 })
         XCTAssertGreaterThan(Set(enemies.map(\.appearanceVariant)).count, 1)
         for (index, node) in enemies.enumerated() {
             let identity = Combat.identities[index]
@@ -46,19 +46,17 @@ final class CombatTests: XCTestCase {
         XCTAssertNotNil(face.geometry?.firstMaterial?.diffuse.contents as? UIImage)
     }
 
-    func testZapIsSingleTargetAndThreeHitsDefeatOneZombie() throws {
+    func testLightningDealsTwoDamageToOneZombie() throws {
         let (scene, combat) = makeEncounter()
-        var time = advance(combat, from: 0, seconds: Combat.spawnInterval + 0.1)
+        let time = advance(combat, from: 0, seconds: Combat.spawnInterval + 0.1)
         let enemies = combatants(in: scene)
         let target = enemies[0]
         target.simdPosition = SIMD3(0, 0, 1.5)
         enemies[1].simdPosition = SIMD3(0.9, 0, 1.5)
-        for health in [2, 1, 0] {
-            XCTAssertTrue(combat.cast(toward: center(target)))
-            time = advance(combat, from: time, seconds: 0.7)
-            XCTAssertEqual(target.health, health)
-            XCTAssertEqual(enemies[1].health, 3)
-        }
+        XCTAssertTrue(combat.cast(toward: center(target)))
+        _ = advance(combat, from: time, seconds: 0.7)
+        XCTAssertEqual(target.health, 0)
+        XCTAssertEqual(enemies[1].health, 2)
         XCTAssertEqual(combat.kills, 1)
         XCTAssertTrue(target.isDefeated)
         XCTAssertTrue(target.hasActions)
@@ -68,10 +66,10 @@ final class CombatTests: XCTestCase {
         let (scene, combat) = makeEncounter()
         let enemy = try XCTUnwrap(combatants(in: scene).first)
         XCTAssertTrue(combat.shoot(toward: center(enemy)))
-        XCTAssertEqual(enemy.health, 3)
+        XCTAssertEqual(enemy.health, 2)
         XCTAssertFalse(combat.shoot(toward: center(enemy)))
         _ = advance(combat, from: 0, seconds: 1)
-        XCTAssertEqual(enemy.health, 2)
+        XCTAssertEqual(enemy.health, 1)
         XCTAssertEqual(combat.kills, 0)
         XCTAssertFalse(enemy.isDefeated)
     }
@@ -82,15 +80,27 @@ final class CombatTests: XCTestCase {
         let enemies = combatants(in: scene)
         XCTAssertEqual(enemies.count, 3)
         enemies[0].simdPosition = SIMD3(0, 0, 1.5)
-        enemies[1].simdPosition = SIMD3(0.8, 0, 1.3)
+        enemies[1].simdPosition = SIMD3(2.15, 0, 0.3)
         enemies[2].simdPosition = SIMD3(-2, 0, -4)
         XCTAssertTrue(combat.fireball(toward: center(enemies[0])))
         _ = advance(combat, from: time, seconds: 0.8)
-        XCTAssertEqual(enemies[0].health, 2)
-        XCTAssertEqual(enemies[1].health, 2)
-        XCTAssertEqual(enemies[2].health, 3)
-        XCTAssertEqual(combat.kills, 0)
+        XCTAssertEqual(enemies[0].health, 0)
+        XCTAssertGreaterThan(enemies[1].health, 1)
+        XCTAssertLessThan(enemies[1].health, 2)
+        XCTAssertEqual(enemies[2].health, 2)
+        XCTAssertEqual(combat.kills, 1)
         XCTAssertNotNil(scene.rootNode.childNode(withName: "Fireball blast", recursively: true))
+    }
+
+    func testFireballForgivingHitVolumeCatchesAVisibleEdgeGraze() throws {
+        let (scene, combat) = makeEncounter()
+        let enemy = try XCTUnwrap(combatants(in: scene).first)
+        enemy.simdPosition = SIMD3(0.62, 0, 3.5)
+        XCTAssertTrue(combat.fireball(toward: SIMD3(0, 1.3, -5)))
+        _ = advance(combat, from: 0, seconds: 0.2)
+        XCTAssertEqual(enemy.health, 0)
+        let blast = try XCTUnwrap(scene.rootNode.childNode(withName: "Fireball blast", recursively: true))
+        XCTAssertGreaterThan(blast.simdPosition.z, 3)
     }
 
     func testRoomWallStopsAnArrowBeforeAnEnemy() throws {
@@ -102,7 +112,7 @@ final class CombatTests: XCTestCase {
         let enemy = try XCTUnwrap(combatants(in: scene).first)
         combat.shoot(toward: center(enemy))
         _ = advance(combat, from: 0, seconds: 1)
-        XCTAssertEqual(enemy.health, 3)
+        XCTAssertEqual(enemy.health, 2)
         XCTAssertEqual(combat.kills, 0)
         XCTAssertNil(scene.rootNode.childNode(withName: "Flying arrow", recursively: true))
     }
@@ -112,7 +122,7 @@ final class CombatTests: XCTestCase {
         XCTAssertTrue(combat.cast(toward: SIMD3(0, 10, -2)))
         _ = advance(combat, from: 0, seconds: 20)
         XCTAssertEqual(combat.kills, 0)
-        XCTAssertTrue(combatants(in: scene).allSatisfy { $0.health == 3 })
+        XCTAssertTrue(combatants(in: scene).allSatisfy { $0.health == 2 })
         XCTAssertLessThan(combat.runSnapshot.health, 100)
     }
 
@@ -126,11 +136,11 @@ final class CombatTests: XCTestCase {
             XCTAssertNil(scene.rootNode.childNode(withName: "Undead curse", recursively: true))
         }
         XCTAssertEqual(combat.runSnapshot.health, 100)
-        XCTAssertTrue(combatants(in: scene).allSatisfy { $0.health == 3 && $0.meleeAttackCount == 0 })
+        XCTAssertTrue(combatants(in: scene).allSatisfy { $0.health == 2 && $0.meleeAttackCount == 0 })
         XCTAssertNil(scene.rootNode.childNode(withName: "Melee ward", recursively: true))
     }
 
-    func testSwipeAndBiteApplyOneAndThreeDamageAtContact() throws {
+    func testSwipeAndBiteEachApplyOneDamageAtContact() throws {
         let (scene, combat) = makeEncounter()
         let enemy = try XCTUnwrap(combatants(in: scene).first)
         enemy.simdPosition = SIMD3(0, 0, 3.85)
@@ -143,7 +153,7 @@ final class CombatTests: XCTestCase {
         XCTAssertEqual(enemy.lastMeleeAttack, .bite)
         XCTAssertEqual(combat.runSnapshot.health, 99)
         _ = advance(combat, from: time, seconds: 0.35)
-        XCTAssertEqual(combat.runSnapshot.health, 96)
+        XCTAssertEqual(combat.runSnapshot.health, 98)
         XCTAssertEqual(enemy.meleeAttackCount, 2)
         XCTAssertNil(scene.rootNode.childNode(withName: "Melee ward", recursively: true))
     }
@@ -254,6 +264,8 @@ final class CombatTests: XCTestCase {
         XCTAssertEqual(combat.lastRejection, .paused)
         combat.setPaused(false)
         time = advance(combat, from: time, seconds: 2)
+        XCTAssertEqual(combat.runSnapshot.mana, 95, accuracy: 0.000001)
+        time = advance(combat, from: time, seconds: 1.3)
         XCTAssertEqual(combat.runSnapshot.mana, 100)
         combat.restart()
         XCTAssertEqual(combat.runSnapshot.health, 100)
@@ -286,6 +298,8 @@ final class CombatTests: XCTestCase {
         XCTAssertEqual(combatants(in: scene).map(\.simdPosition), positions)
         XCTAssertFalse(combat.cast(toward: SIMD3(0, 1, 0)))
         XCTAssertEqual(combat.lastRejection, .gameOver)
+        XCTAssertFalse(combat.melee(toward: SIMD3(0, 1, 0)))
+        XCTAssertEqual(combat.lastRejection, .gameOver)
         XCTAssertEqual(combat.summon(kind: .alan) { SCNNode() }, .gameOver)
         combat.restart()
         XCTAssertFalse(combat.runSnapshot.isGameOver)
@@ -312,7 +326,7 @@ final class CombatTests: XCTestCase {
         let slowDistance = slowEnemy.simdPosition.z + 1
         let normalDistance = normalEnemy.simdPosition.z + 1
         XCTAssertEqual(slowDistance, normalDistance * 0.5, accuracy: 0.001)
-        XCTAssertEqual(slowEnemy.health, 3)
+        XCTAssertEqual(slowEnemy.health, 2)
         XCTAssertEqual(slowed.kills, 0)
     }
 
@@ -379,7 +393,7 @@ final class CombatTests: XCTestCase {
         let expiryZ = enemy.simdPosition.z
         _ = advance(combat, from: time, seconds: 0.5)
         XCTAssertEqual(enemy.simdPosition.z - expiryZ, 0.24, accuracy: 0.002)
-        XCTAssertEqual(enemy.health, 3)
+        XCTAssertEqual(enemy.health, 2)
         XCTAssertFalse(combat.runSnapshot.isGameOver)
     }
 
@@ -395,9 +409,9 @@ final class CombatTests: XCTestCase {
         ]
         for (enemy, position) in zip(enemies, positions) { enemy.simdPosition = position }
         XCTAssertTrue(combat.ice(toward: center(enemies[0])))
-        XCTAssertEqual(enemies.map(\.health), [2, 2, 3, 3, 3])
-        XCTAssertEqual(enemies[0].slowRemaining, 6)
-        XCTAssertEqual(enemies[1].slowRemaining, 6)
+        XCTAssertEqual(enemies.map(\.health), [0, 0, 2, 2, 2])
+        XCTAssertTrue(enemies[0].isDefeated)
+        XCTAssertTrue(enemies[1].isDefeated)
         XCTAssertEqual(enemies[2].slowRemaining, 0)
         XCTAssertEqual(combat.runSnapshot.mana, 85)
         XCTAssertFalse(combat.ice(toward: center(enemies[0])))
@@ -405,56 +419,67 @@ final class CombatTests: XCTestCase {
         XCTAssertEqual(combat.runSnapshot.mana, 85)
     }
 
-    func testIceSlowExpiresAfterSixSecondsAndDoesNotShortenPatronus() throws {
+    func testIceDefeatsTwoHealthZombieWithoutLeavingActiveSlow() throws {
         let (scene, combat) = makeEncounter()
         let enemy = try XCTUnwrap(combatants(in: scene).first)
         enemy.simdPosition = SIMD3(0, 0, 1)
         XCTAssertTrue(combat.ice(toward: center(enemy)))
-        var time = advance(combat, from: 0, seconds: 0.5)
-        XCTAssertEqual(enemy.simdPosition.z, 1.12, accuracy: 0.002)
-        XCTAssertEqual(enemy.slowRemaining, 5.5, accuracy: 0.001)
-        time = advance(combat, from: time, seconds: 5.6)
+        XCTAssertEqual(enemy.health, 0)
         XCTAssertEqual(enemy.slowRemaining, 0)
-        let patronus = SCNNode()
-        patronus.simdPosition = enemy.simdPosition + SIMD3(0, 0, 0.2)
-        XCTAssertEqual(combat.summon(kind: .patronus) { patronus }, .summoned)
-        time = advance(combat, from: time, seconds: 0.1)
-        let remaining = enemy.slowRemaining
-        XCTAssertGreaterThan(remaining, 14.8)
-        XCTAssertTrue(combat.ice(toward: center(enemy)))
-        XCTAssertEqual(enemy.health, 1)
-        XCTAssertEqual(enemy.slowRemaining, remaining, accuracy: 0.001)
+        let position = enemy.simdPosition
+        _ = advance(combat, from: 0, seconds: 0.5)
+        XCTAssertEqual(enemy.simdPosition, position)
+        XCTAssertEqual(combat.kills, 1)
     }
 
-    func testShieldBlocksPlayerForFiveSecondsAndHasTenSecondCooldown() throws {
+    func testShieldAbsorbsDamagePersistsPastCooldownAndRejectsDuplicate() throws {
         let (scene, combat) = makeEncounter()
         let enemy = try XCTUnwrap(combatants(in: scene).first)
         enemy.simdPosition = SIMD3(0, 0, 3.85)
         XCTAssertTrue(combat.shield())
         XCTAssertEqual(combat.runSnapshot.mana, 80)
-        XCTAssertEqual(combat.runSnapshot.shieldRemaining, 5)
+        XCTAssertEqual(combat.runSnapshot.shieldHealth, 20)
+        XCTAssertEqual(combat.runSnapshot.shieldRemaining, 0)
         XCTAssertEqual(combat.runSnapshot.shieldCooldownRemaining, 10)
         let dome = try XCTUnwrap(scene.rootNode.childNode(withName: "Player shield", recursively: true))
         let position = dome.simdWorldPosition
         var time = advance(combat, from: 0, seconds: 4.1)
         XCTAssertEqual(combat.runSnapshot.health, 100)
+        XCTAssertEqual(combat.runSnapshot.shieldHealth, 18)
         XCTAssertEqual(combat.blockedAttacks, 2)
         XCTAssertEqual(dome.simdWorldPosition, position)
+        time = advance(combat, from: time, seconds: 6.1)
+        XCTAssertEqual(combat.runSnapshot.health, 100)
+        XCTAssertGreaterThan(combat.runSnapshot.shieldHealth ?? 0, 0)
+        XCTAssertEqual(combat.runSnapshot.shieldCooldownRemaining, 0)
+        XCTAssertNotNil(dome.parent)
         let mana = combat.runSnapshot.mana
         XCTAssertFalse(combat.shield())
         XCTAssertEqual(combat.lastRejection, .cooldown)
         XCTAssertEqual(combat.runSnapshot.mana, mana)
-        time = advance(combat, from: time, seconds: 2.9)
-        XCTAssertEqual(combat.runSnapshot.health, 99)
-        XCTAssertEqual(combat.runSnapshot.shieldRemaining, 0)
-        XCTAssertEqual(combat.runSnapshot.shieldCooldownRemaining, 3, accuracy: 0.001)
-        XCTAssertNil(dome.parent)
-        time = advance(combat, from: time, seconds: 3.1)
-        XCTAssertTrue(combat.shield())
         combat.restart()
-        XCTAssertEqual(combat.runSnapshot.shieldRemaining, 0)
+        XCTAssertEqual(combat.runSnapshot.shieldHealth, 0)
         XCTAssertEqual(combat.runSnapshot.shieldCooldownRemaining, 0)
         XCTAssertNil(scene.rootNode.childNode(withName: "Player shield", recursively: true))
+    }
+
+    func testShieldDepletionRemovesDomeAndAllowsRecastAfterCooldown() throws {
+        let (scene, combat) = makeEncounter()
+        XCTAssertTrue(combat.shield())
+        let dome = try XCTUnwrap(scene.rootNode.childNode(withName: "Player shield", recursively: true))
+        var time = 0.0
+        while combat.blockedAttacks < 20, time < 80 {
+            for enemy in combatants(in: scene) { enemy.simdPosition = SIMD3(0, 0, 3.85) }
+            time += 1.0 / 60
+            combat.update(at: time)
+        }
+        XCTAssertEqual(combat.blockedAttacks, 20)
+        XCTAssertEqual(combat.runSnapshot.shieldHealth, 0)
+        XCTAssertNil(dome.parent)
+        XCTAssertTrue(combat.shield())
+        XCTAssertEqual(combat.runSnapshot.shieldHealth, 20)
+        XCTAssertEqual(combat.runSnapshot.shieldCooldownRemaining, 10)
+        XCTAssertEqual(combat.runSnapshot.mana, 80, accuracy: 0.001)
     }
 
     func testShieldDoesNotProtectPhysicalAllies() throws {
@@ -485,7 +510,8 @@ final class CombatTests: XCTestCase {
         XCTAssertFalse(combat.ice(toward: SIMD3(0, 1, 0)))
         combat.setPaused(false)
         time = advance(combat, from: time, seconds: 1.1)
-        XCTAssertEqual(combat.runSnapshot.shieldRemaining, 3.9166667, accuracy: 0.001)
+        XCTAssertEqual(combat.runSnapshot.shieldHealth, 20)
+        XCTAssertEqual(combat.runSnapshot.shieldCooldownRemaining, 8.9166667, accuracy: 0.001)
         combat.restart()
         XCTAssertTrue(combat.startRun())
         time = advance(combat, from: time, seconds: 3.1)
@@ -580,12 +606,14 @@ final class CombatTests: XCTestCase {
         time = advance(combat, from: time, seconds: 3.1)
         let slowedEnemy = try XCTUnwrap(combatants(in: scene).first)
         slowedEnemy.simdPosition = SIMD3(0, 0, 2)
-        XCTAssertTrue(combat.ice(toward: center(slowedEnemy)))
         let alan = SCNNode()
         alan.simdPosition = SIMD3(2.2, 0, -4.8)
         XCTAssertEqual(combat.summon(kind: .alan) { alan }, .summoned)
-        time = advance(combat, from: time, seconds: 4.1)
-        XCTAssertGreaterThan(slowedEnemy.slowRemaining, 0)
+        // Recover the combined ice and Nyan cost before starting the six-second slow.
+        time = advance(combat, from: time, seconds: 7.1)
+        XCTAssertGreaterThanOrEqual(combat.runSnapshot.mana, SpellCatalog.ice.manaCost + SpellCatalog.nyan.manaCost)
+        XCTAssertTrue(combat.ice(toward: center(slowedEnemy)))
+        XCTAssertTrue(slowedEnemy.isDefeated)
         XCTAssertTrue(combat.nyan())
         XCTAssertNotNil(alan.parent)
         XCTAssertNotNil(combat.transfigurationPhase)
@@ -627,7 +655,7 @@ final class CombatTests: XCTestCase {
         XCTAssertEqual(combat.pendingSpawns, 0)
         let enemies = combatants(in: scene)
         XCTAssertEqual(Set(enemies.map(\.identityID)).count, 8)
-        XCTAssertTrue(enemies.allSatisfy { $0.isTransfigured && $0.health == 3 && !$0.isDefeated })
+        XCTAssertTrue(enemies.allSatisfy { $0.isTransfigured && $0.health == 2 && !$0.isDefeated })
         let cats = try enemies.map {
             try XCTUnwrap($0.childNode(withName: "Transfigured Nyan cat", recursively: false))
         }
@@ -681,8 +709,9 @@ final class CombatTests: XCTestCase {
         XCTAssertTrue(enemies.allSatisfy { $0.childNode(withName: "Transfigured Nyan cat", recursively: false) == nil })
         XCTAssertEqual(combat.kills, 8)
         XCTAssertEqual(combat.runSnapshot.score, 1_050)
-        XCTAssertEqual(combat.runSnapshot.level, 2)
-        XCTAssertEqual(combat.runSnapshot.xp, 40)
+        XCTAssertEqual(combat.runSnapshot.level, 1)
+        XCTAssertEqual(combat.runSnapshot.xp, 0)
+        XCTAssertEqual(combat.runSnapshot.xpToNextLevel, 0)
         XCTAssertEqual(combat.runSnapshot.bestWave, 1)
         XCTAssertEqual(combat.remaining, 0)
         XCTAssertEqual(combat.pendingSpawns, 0)
@@ -694,6 +723,9 @@ final class CombatTests: XCTestCase {
         XCTAssertEqual(combat.remaining, 0)
         _ = advance(combat, from: time, seconds: 0.7)
         XCTAssertEqual(combat.wave, 2)
+        XCTAssertEqual(combat.runSnapshot.level, 2)
+        XCTAssertEqual(combat.runSnapshot.health, 110)
+        XCTAssertEqual(combat.runSnapshot.mana, 110)
         XCTAssertEqual(combat.remaining, 1)
         XCTAssertEqual(combat.pendingSpawns, 7)
         XCTAssertEqual(combat.kills, 8)
@@ -701,7 +733,7 @@ final class CombatTests: XCTestCase {
         XCTAssertTrue(combatants(in: scene).allSatisfy { !$0.isTransfigured })
     }
 
-    func testNyanEmitsLevelAndWaveEventsOnceWithPauseAndRestart() {
+    func testNyanEmitsStageClearAndStartEventsOnceWithPauseAndRestart() {
         let (_, combat) = makeEncounter()
         var events: [Combat.Event] = []
         var clearedScore: Int?
@@ -716,9 +748,7 @@ final class CombatTests: XCTestCase {
         XCTAssertTrue(events.isEmpty)
         combat.setPaused(false)
         time = advance(combat, from: time, seconds: SurvivalState.nyanDuration - 9.9)
-        let clearedEvents: [Combat.Event] = [
-            .levelUp(level: 2, maxHealth: 110, maxMana: 110), .waveCleared(1),
-        ]
+        let clearedEvents: [Combat.Event] = [.waveCleared(1)]
         XCTAssertEqual(events, clearedEvents)
         XCTAssertEqual(clearedScore, 1_050)
 
@@ -805,12 +835,13 @@ final class CombatTests: XCTestCase {
         XCTAssertTrue(combat.nyan())
         var time = advance(combat, from: 0, seconds: 0.7)
         XCTAssertTrue(combat.ice(toward: center(enemy)))
-        time = advance(combat, from: time, seconds: 4)
+        time = advance(combat, from: time, seconds: 4.6)
+        XCTAssertGreaterThanOrEqual(combat.runSnapshot.mana, SpellCatalog.fireball.manaCost)
         XCTAssertTrue(combat.fireball(toward: center(enemy)))
         _ = advance(combat, from: time, seconds: 1)
         XCTAssertEqual(combat.kills, 0)
         XCTAssertEqual(combat.runSnapshot.score, 0)
-        XCTAssertTrue(combatants(in: scene).allSatisfy { $0.health == 3 && $0.isTransfigured })
+        XCTAssertTrue(combatants(in: scene).allSatisfy { $0.health == 2 && $0.isTransfigured })
     }
 
     func testPhysicalAllyRemainsButCannotTargetOrDamageTransfiguredCats() throws {
@@ -850,22 +881,114 @@ final class CombatTests: XCTestCase {
         XCTAssertEqual(combat.remaining, 1)
     }
 
-    func testKillsAwardScoreAndXPExactlyOnce() throws {
+    func testKillsAwardScoreExactlyOnceWithoutExperienceLevels() throws {
         let (scene, combat) = makeEncounter()
         let enemy = try XCTUnwrap(combatants(in: scene).first)
         enemy.simdPosition = SIMD3(0, 0, 1.5)
         var time = 0.0
-        for _ in 0..<3 {
+        for _ in 0..<2 {
             XCTAssertTrue(combat.shoot(toward: center(enemy)))
             time = advance(combat, from: time, seconds: 0.6)
         }
         XCTAssertEqual(combat.kills, 1)
         XCTAssertEqual(combat.runSnapshot.score, 100)
-        XCTAssertEqual(combat.runSnapshot.xp, 10)
+        XCTAssertEqual(combat.runSnapshot.xp, 0)
+        XCTAssertEqual(combat.runSnapshot.level, 1)
         XCTAssertTrue(combat.fireball(toward: center(enemy)))
         _ = advance(combat, from: time, seconds: 1)
         XCTAssertEqual(combat.kills, 1)
         XCTAssertEqual(combat.runSnapshot.score, 100)
+    }
+
+    func testFireballSharesFiveDamageWithHighestWeightAtCenter() {
+        let damage = CombatGeometry.fireballDamages(distances: [0, 1.5, 3, 3.01], radius: 3)
+        XCTAssertEqual(damage.reduce(0, +), 5, accuracy: 0.000001)
+        XCTAssertGreaterThan(damage[0], damage[1])
+        XCTAssertGreaterThan(damage[1], damage[2])
+        XCTAssertGreaterThan(damage[2], 0)
+        XCTAssertEqual(damage[3], 0)
+        XCTAssertEqual(CombatGeometry.fireballDamages(distances: [0], radius: 3), [5])
+        XCTAssertEqual(CombatGeometry.fireballDamages(distances: [1, 1], radius: 3), [2.5, 2.5])
+        XCTAssertEqual(CombatGeometry.fireballDamages(distances: [3.01, .nan, -1], radius: 3), [0, 0, 0])
+        XCTAssertEqual(CombatGeometry.fireballDamages(distances: [0], radius: 0), [0])
+        XCTAssertEqual(CombatGeometry.fireballDamages(distances: [], radius: 3), [])
+    }
+
+    func testFireballLeavesFractionalHealthWhenFiveDamageIsSharedByThreeZombies() {
+        let (scene, combat) = makeEncounter(cameraHeight: 6)
+        let time = advance(combat, from: 0, seconds: Combat.spawnInterval * 2 + 0.2)
+        scene.rootNode.childNode(withName: "Test camera", recursively: false)?.position.y = 1.65
+        let enemies = combatants(in: scene)
+        for (index, enemy) in enemies.enumerated() {
+            enemy.simdPosition = SIMD3(Float(index - 1) * 0.4, 0, 1.5)
+        }
+        XCTAssertTrue(combat.fireball(toward: center(enemies[1])))
+        _ = advance(combat, from: time, seconds: 0.6)
+        XCTAssertTrue(enemies.allSatisfy { $0.health > 0 && $0.health < 2 })
+        XCTAssertEqual(enemies.map(\.health).reduce(0, +), 1, accuracy: 0.000001)
+        XCTAssertEqual(combat.kills, 0)
+        enemies[0].simdPosition = SIMD3(0, 0, 1.5)
+        XCTAssertTrue(combat.ice(toward: center(enemies[0])))
+        XCTAssertGreaterThan(combat.kills, 0)
+    }
+
+    func testWandMeleeDealsOneDamageToNearestTargetAndTwoSwingsDefeatIt() throws {
+        let (scene, combat) = makeEncounter(cameraHeight: 6)
+        var time = advance(combat, from: 0, seconds: Combat.spawnInterval + 0.1)
+        scene.rootNode.childNode(withName: "Test camera", recursively: false)?.position.y = 1.65
+        let enemies = combatants(in: scene)
+        enemies[0].simdPosition = SIMD3(0, 0, 3.5)
+        enemies[1].simdPosition = SIMD3(0.8, 0, 3.4)
+        let mana = combat.runSnapshot.mana
+        XCTAssertTrue(combat.melee(toward: center(enemies[0])))
+        XCTAssertEqual(enemies.map(\.health), [1, 2])
+        XCTAssertEqual(combat.runSnapshot.mana, mana)
+        XCTAssertFalse(combat.melee(toward: center(enemies[0])))
+        XCTAssertEqual(combat.lastRejection, .cooldown)
+        time = advance(combat, from: time, seconds: 0.6)
+        XCTAssertTrue(combat.melee(toward: center(enemies[0])))
+        XCTAssertEqual(enemies.map(\.health), [0, 2])
+        XCTAssertEqual(combat.kills, 1)
+    }
+
+    func testWandMeleeCanMissButCannotHitDistantRearOrTransfiguredTargets() throws {
+        let (scene, combat) = makeEncounter()
+        let enemy = try XCTUnwrap(combatants(in: scene).first)
+        enemy.simdPosition = SIMD3(0, 0, 1)
+        XCTAssertTrue(combat.melee(toward: center(enemy)))
+        XCTAssertEqual(enemy.health, 2)
+        var time = advance(combat, from: 0, seconds: 0.6)
+        enemy.simdPosition = SIMD3(0, 0, 3.85)
+        XCTAssertTrue(combat.melee(toward: SIMD3(0, 1.65, 10)))
+        XCTAssertEqual(enemy.health, 2)
+        time = advance(combat, from: time, seconds: 0.6)
+        XCTAssertTrue(combat.nyan())
+        XCTAssertTrue(combat.melee(toward: center(enemy)))
+        XCTAssertEqual(enemy.health, 2)
+        XCTAssertEqual(combat.kills, 0)
+    }
+
+    func testWandMeleeRejectsInvalidTargetsAndCannotAttackWhileWaitingOrPaused() throws {
+        let (scene, combat) = makeEncounter(startsImmediately: false)
+        let target = SIMD3<Float>(0, 1, 3.85)
+        XCTAssertFalse(combat.melee(toward: target))
+        XCTAssertEqual(combat.lastRejection, .notReady)
+        XCTAssertTrue(combat.startRun())
+        XCTAssertFalse(combat.melee(toward: target))
+        var time = advance(combat, from: 0, seconds: 3.1)
+        XCTAssertFalse(combat.melee(toward: SIMD3(.nan, 0, 0)))
+        XCTAssertEqual(combat.lastRejection, .invalidTarget)
+        let camera = try XCTUnwrap(scene.rootNode.childNode(withName: "Test camera", recursively: false))
+        XCTAssertFalse(combat.melee(toward: camera.simdPosition))
+        XCTAssertTrue(combat.melee(toward: target), "Rejected targets must not start the swing cooldown.")
+        combat.setPaused(true)
+        time = advance(combat, from: time, seconds: 20)
+        XCTAssertFalse(combat.melee(toward: target))
+        XCTAssertEqual(combat.lastRejection, .paused)
+        combat.setPaused(false)
+        XCTAssertFalse(combat.melee(toward: target), "Pause must not consume the swing cooldown.")
+        _ = advance(combat, from: time, seconds: 0.6)
+        XCTAssertTrue(combat.melee(toward: target))
     }
 
     func testSweptCollisionFindsTargetBetweenFramesAndRejectsMiss() throws {
@@ -910,8 +1033,8 @@ final class CombatTests: XCTestCase {
     func testManaRegenerationIgnoresReplayedAndBackwardsFrameTimes() {
         let (_, combat) = makeEncounter()
         XCTAssertTrue(combat.shield())
-        let time = advance(combat, from: 0, seconds: 1.5)
-        XCTAssertEqual(combat.runSnapshot.mana, 84, accuracy: 0.000001)
+        let time = advance(combat, from: 0, seconds: 2.5)
+        XCTAssertEqual(combat.runSnapshot.mana, 82, accuracy: 0.000001)
         let snapshot = combat.runSnapshot
         combat.update(at: time)
         combat.update(at: time - 0.05)
@@ -919,7 +1042,7 @@ final class CombatTests: XCTestCase {
         combat.update(at: time)
         XCTAssertEqual(combat.runSnapshot, snapshot, "Previously counted frame time must not regenerate mana twice.")
         combat.update(at: time + 0.05)
-        XCTAssertEqual(combat.runSnapshot.mana, snapshot.mana + 0.4, accuracy: 0.000001)
+        XCTAssertEqual(combat.runSnapshot.mana, snapshot.mana + 0.2, accuracy: 0.000001)
         combat.setPaused(true)
         let paused = combat.runSnapshot
         combat.update(at: time + 5)
@@ -927,6 +1050,21 @@ final class CombatTests: XCTestCase {
         combat.setPaused(false)
         combat.update(at: time + 10)
         XCTAssertEqual(combat.runSnapshot, paused, "The first resumed frame establishes a fresh clock.")
+    }
+
+    func testFireballSpendsImmediatelyAndRecoversAfterTwoSecondDelay() {
+        let (_, combat) = makeEncounter(cameraHeight: 6)
+        XCTAssertTrue(combat.fireball(toward: SIMD3(0, 8, -5)))
+        XCTAssertEqual(combat.runSnapshot.mana, 85)
+        var time = advance(combat, from: 0, seconds: 2)
+        XCTAssertEqual(combat.runSnapshot.mana, 85, accuracy: 0.000001)
+        time = advance(combat, from: time, seconds: 1)
+        XCTAssertEqual(combat.runSnapshot.mana, 89, accuracy: 0.000001)
+        time = advance(combat, from: time, seconds: 2)
+        XCTAssertEqual(combat.runSnapshot.mana, 97, accuracy: 0.000001)
+        _ = advance(combat, from: time, seconds: 0.75)
+        XCTAssertEqual(combat.runSnapshot.mana, 100, accuracy: 0.000001)
+        XCTAssertEqual(combat.runSnapshot.kills, 0, "This recovery trace must not include a stage refill.")
     }
 
     private func center(_ node: SCNNode) -> SIMD3<Float> {
@@ -969,42 +1107,127 @@ final class SurvivalStateTests: XCTestCase {
         let state = SurvivalState(defaults: nil)
         XCTAssertTrue(state.spend(15))
         XCTAssertEqual(state.snapshot.mana, 85)
-        state.update(deltaTime: 0.9)
+        state.update(deltaTime: 1.9)
         XCTAssertEqual(state.snapshot.mana, 85)
         XCTAssertTrue(state.spend(0))
         state.update(deltaTime: 0.2)
-        XCTAssertEqual(state.snapshot.mana, 85.8, accuracy: 0.0001)
+        XCTAssertEqual(state.snapshot.mana, 85.4, accuracy: 0.0001)
         XCTAssertFalse(state.spend(100))
         state.update(deltaTime: 1)
-        XCTAssertEqual(state.snapshot.mana, 93.8, accuracy: 0.0001)
+        XCTAssertEqual(state.snapshot.mana, 89.4, accuracy: 0.0001)
         state.update(deltaTime: 10)
         XCTAssertEqual(state.snapshot.mana, 100)
     }
 
-    func testLevelThresholdCarryoverHealingAndRefill() {
+    func testEachPaidCastRestartsRegenerationDelay() {
+        let state = SurvivalState(defaults: nil)
+        XCTAssertTrue(state.spend(15))
+        state.update(deltaTime: 1.5)
+        XCTAssertTrue(state.spend(5))
+        XCTAssertEqual(state.snapshot.mana, 80)
+        state.update(deltaTime: 2)
+        XCTAssertEqual(state.snapshot.mana, 80)
+        state.update(deltaTime: 0.5)
+        XCTAssertEqual(state.snapshot.mana, 82)
+    }
+
+    func testInvalidTimeCannotAdvanceManaOrItsRegenerationDelay() {
+        let state = SurvivalState(defaults: nil)
+        XCTAssertTrue(state.spend(20))
+        let spent = state.snapshot
+        for deltaTime: TimeInterval in [0, -1, .nan, .infinity, -.infinity] {
+            state.update(deltaTime: deltaTime)
+            XCTAssertEqual(state.snapshot, spent)
+        }
+        state.update(deltaTime: 2)
+        XCTAssertEqual(state.snapshot.mana, 80)
+        state.update(deltaTime: 0.5)
+        XCTAssertEqual(state.snapshot.mana, 82)
+    }
+
+    func testKillsAndStageClearDoNotAdvanceLevelOrRefillResourcesBeforeNextStage() {
         let state = SurvivalState(defaults: nil)
         state.damage(60)
         XCTAssertTrue(state.spend(90))
-        for _ in 0..<4 { state.recordKill() }
-        XCTAssertEqual(state.snapshot.level, 2)
+        for _ in 0..<8 { state.recordKill() }
+        XCTAssertEqual(state.snapshot.kills, 8)
+        XCTAssertEqual(state.snapshot.score, 800)
+        XCTAssertEqual(state.snapshot.level, 1)
+        XCTAssertEqual(state.snapshot.wave, 1)
         XCTAssertEqual(state.snapshot.xp, 0)
-        XCTAssertEqual(state.snapshot.xpToNextLevel, 60)
+        XCTAssertEqual(state.snapshot.xpToNextLevel, 0)
+        XCTAssertEqual(state.snapshot.health, 40)
+        XCTAssertEqual(state.snapshot.mana, 10)
+        state.clearWave()
+        XCTAssertEqual(state.snapshot.score, 1_050)
+        XCTAssertEqual(state.snapshot.bestWave, 1)
+        XCTAssertEqual(state.snapshot.level, 1)
+        XCTAssertEqual(state.snapshot.health, 40)
+        XCTAssertEqual(state.snapshot.mana, 10)
+        state.nextWave()
+        XCTAssertEqual(state.snapshot.level, 2)
+        XCTAssertEqual(state.snapshot.wave, 2)
         XCTAssertEqual(state.snapshot.maxHealth, 110)
-        XCTAssertEqual(state.snapshot.health, 60)
+        XCTAssertEqual(state.snapshot.health, 110)
+        XCTAssertEqual(state.snapshot.maxMana, 110)
         XCTAssertEqual(state.snapshot.mana, 110)
-        for _ in 0..<7 { state.recordKill() }
+        XCTAssertEqual(state.snapshot.score, 1_050)
+        state.damage(70)
+        XCTAssertTrue(state.spend(100))
+        for _ in 0..<8 { state.recordKill() }
+        state.clearWave()
+        XCTAssertEqual(state.snapshot.bestWave, 2)
+        XCTAssertEqual(state.snapshot.level, 2)
+        XCTAssertEqual(state.snapshot.health, 40)
+        XCTAssertEqual(state.snapshot.mana, 10)
+        state.nextWave()
         XCTAssertEqual(state.snapshot.level, 3)
-        XCTAssertEqual(state.snapshot.xp, 10)
-        XCTAssertEqual(state.snapshot.xpToNextLevel, 80)
-        XCTAssertEqual(state.snapshot.health, 80)
-        XCTAssertEqual(state.snapshot.maxMana, 120)
-        XCTAssertEqual(state.snapshot.score, 1_100)
+        XCTAssertEqual(state.snapshot.wave, 3)
+        XCTAssertEqual(state.snapshot.health, 120)
+        XCTAssertEqual(state.snapshot.mana, 120)
+        XCTAssertEqual(state.snapshot.xp, 0)
+        XCTAssertEqual(state.snapshot.xpToNextLevel, 0)
+        XCTAssertEqual(state.snapshot.score, 2_100)
+    }
+
+    func testNextStageRestoresResourcesWithoutChangingRemainingShieldHealthOrCooldown() {
+        let state = SurvivalState(defaults: nil)
+        state.damage(60)
+        XCTAssertTrue(state.activateShield())
+        state.damage(7)
+        XCTAssertEqual(state.snapshot.health, 40)
+        XCTAssertEqual(state.snapshot.shieldHealth, 13)
+        let cooldown = state.snapshot.shieldCooldownRemaining
+        state.nextWave()
+        XCTAssertEqual(state.snapshot.level, 2)
+        XCTAssertEqual(state.snapshot.wave, 2)
+        XCTAssertEqual(state.snapshot.health, 110)
+        XCTAssertEqual(state.snapshot.mana, 110)
+        XCTAssertEqual(state.snapshot.shieldHealth, 13)
+        XCTAssertEqual(state.snapshot.shieldCooldownRemaining, cooldown)
+    }
+
+    func testStagesCannotAdvanceDuringSetupCountdownOrGameOver() {
+        let state = SurvivalState(defaults: nil, hasStarted: false)
+        let waiting = state.snapshot
+        state.nextWave()
+        XCTAssertEqual(state.snapshot, waiting)
+        XCTAssertTrue(state.beginCountdown())
+        let countdown = state.snapshot
+        state.nextWave()
+        XCTAssertEqual(state.snapshot, countdown)
+        state.advanceCountdown(deltaTime: 3)
+        state.damage(100)
+        let ended = state.snapshot
+        state.nextWave()
+        XCTAssertEqual(state.snapshot, ended)
     }
 
     func testOlderSnapshotDecodesWithoutShieldFields() throws {
         let snapshot = try JSONDecoder().decode(RunSnapshot.self, from: Data(#"{"health":75,"mana":80}"#.utf8))
         XCTAssertEqual(snapshot.health, 75)
         XCTAssertEqual(snapshot.mana, 80)
+        XCTAssertNil(snapshot.shieldHealth)
         XCTAssertEqual(snapshot.shieldRemaining, 0)
         XCTAssertEqual(snapshot.shieldCooldownRemaining, 0)
         XCTAssertTrue(snapshot.hasStarted)
@@ -1013,15 +1236,62 @@ final class SurvivalStateTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(RunSnapshot.self, from: JSONEncoder().encode(snapshot)), snapshot)
     }
 
-    func testShieldTimersStopAtGameOverAndRestartClearsThem() {
+    func testShieldAbsorbsTwentyDamageAndCarriesOverflowToHealth() {
         let state = SurvivalState(defaults: nil)
         XCTAssertTrue(state.activateShield())
-        state.damage(100)
+        state.damage(1)
+        XCTAssertEqual(state.snapshot.shieldHealth, 19)
+        XCTAssertEqual(state.snapshot.health, 100)
+        state.damage(22)
+        XCTAssertEqual(state.snapshot.shieldHealth, 0)
+        XCTAssertEqual(state.snapshot.health, 97)
+        state.damage(1)
+        XCTAssertEqual(state.snapshot.health, 96)
+    }
+
+    func testShieldHasNoExpiryRejectsActiveDuplicateAndRecastsAfterDepletion() {
+        let state = SurvivalState(defaults: nil)
+        XCTAssertTrue(state.activateShield())
+        state.update(deltaTime: 100)
+        XCTAssertEqual(state.snapshot.shieldHealth, 20)
+        XCTAssertEqual(state.snapshot.shieldCooldownRemaining, 0)
+        let active = state.snapshot
+        XCTAssertFalse(state.activateShield())
+        XCTAssertEqual(state.snapshot, active)
+        state.damage(20)
+        XCTAssertEqual(state.snapshot.health, 100)
+        XCTAssertEqual(state.snapshot.shieldHealth, 0)
+        XCTAssertTrue(state.activateShield())
+        XCTAssertEqual(state.snapshot.mana, 80)
+        XCTAssertEqual(state.snapshot.shieldHealth, 20)
+        state.damage(20)
+        let depleted = state.snapshot
+        XCTAssertFalse(state.activateShield())
+        XCTAssertEqual(state.snapshot, depleted)
+        state.update(deltaTime: 10)
+        XCTAssertTrue(state.activateShield())
+    }
+
+    func testShieldHealthRoundTripsAndLegacyTimerRemainsReadable() throws {
+        var snapshot = RunSnapshot()
+        snapshot.shieldHealth = 17
+        XCTAssertEqual(try JSONDecoder().decode(RunSnapshot.self, from: JSONEncoder().encode(snapshot)), snapshot)
+        let legacy = try JSONDecoder().decode(RunSnapshot.self, from: Data(#"{"shieldRemaining":4}"#.utf8))
+        XCTAssertNil(legacy.shieldHealth)
+        XCTAssertEqual(legacy.shieldRemaining, 4)
+        XCTAssertEqual(try JSONDecoder().decode(RunSnapshot.self, from: JSONEncoder().encode(legacy)), legacy)
+    }
+
+    func testShieldCooldownStopsAtGameOverAndRestartClearsIt() {
+        let state = SurvivalState(defaults: nil)
+        XCTAssertTrue(state.activateShield())
+        state.damage(120)
         let ended = state.snapshot
         state.update(deltaTime: 20)
         XCTAssertEqual(state.snapshot, ended)
         XCTAssertFalse(state.activateShield())
         state.restart()
+        XCTAssertEqual(state.snapshot.shieldHealth, 0)
         XCTAssertEqual(state.snapshot.shieldRemaining, 0)
         XCTAssertEqual(state.snapshot.shieldCooldownRemaining, 0)
     }
@@ -1052,7 +1322,7 @@ final class SurvivalStateTests: XCTestCase {
         state.nextWave()
         XCTAssertEqual(state.snapshot.score, 350)
         XCTAssertEqual(state.snapshot.bestWave, 1)
-        state.damage(100)
+        state.damage(state.snapshot.maxHealth)
         let ended = state.snapshot
         state.update(deltaTime: 100)
         state.recordKill()
@@ -1061,11 +1331,54 @@ final class SurvivalStateTests: XCTestCase {
         XCTAssertEqual(state.snapshot, ended)
         state.restart()
         XCTAssertEqual(state.snapshot.health, 100)
+        XCTAssertEqual(state.snapshot.mana, 100)
+        XCTAssertEqual(state.snapshot.level, 1)
+        XCTAssertEqual(state.snapshot.wave, 1)
         XCTAssertEqual(state.snapshot.score, 0)
         XCTAssertEqual(state.snapshot.bestScore, 350)
         XCTAssertEqual(state.snapshot.bestWave, 1)
         let restored = SurvivalState(defaults: defaults)
         XCTAssertEqual(restored.snapshot.bestScore, 350)
         XCTAssertEqual(restored.snapshot.bestWave, 1)
+    }
+}
+
+@MainActor
+final class StageHUDTests: XCTestCase {
+    func testHUDShowsCurrentStageAndKillsWithoutExperienceProgress() throws {
+        var run = RunSnapshot()
+        run.wave = 7
+        run.level = 9
+        run.xp = 30
+        run.xpToNextLevel = 200
+        run.kills = 12
+        run.score = 1_450
+        run.bestWave = 6
+        let hud = RunHUD()
+        hud.show(run)
+        let labels = hud.subviews.compactMap { $0 as? UILabel }
+        let level = try XCTUnwrap(labels.first { $0.accessibilityIdentifier == "playerLevel" })
+        let score = try XCTUnwrap(labels.first { $0.accessibilityIdentifier == "playerScore" })
+        XCTAssertEqual(level.text, "Level 7  ·  Best cleared 6")
+        XCTAssertEqual(level.accessibilityLabel, "Level 7, best cleared level 6")
+        XCTAssertEqual(score.text, "1450 pts  ·  12 defeated")
+        XCTAssertFalse(labels.contains { $0.text?.contains("XP") == true })
+        XCTAssertEqual(hud.subviews.compactMap { $0 as? UIProgressView }.count, 2)
+    }
+
+    func testGameOverShowsStageAndBestClearedLevel() throws {
+        var run = RunSnapshot()
+        run.isGameOver = true
+        run.wave = 3
+        run.level = 8
+        run.bestWave = 2
+        let view = RunOverView(frame: CGRect(x: 0, y: 0, width: 600, height: 500))
+        view.show(run)
+        let stack = try XCTUnwrap(view.subviews.first as? UIStackView)
+        let results = try XCTUnwrap(
+            stack.arrangedSubviews.compactMap { $0 as? UILabel }.first { $0.accessibilityIdentifier == "runResults" })
+        XCTAssertTrue(results.text?.contains("Level 3") == true)
+        XCTAssertTrue(results.text?.contains("Best cleared level 2") == true)
+        XCTAssertFalse(results.text?.contains("Wave") == true)
     }
 }

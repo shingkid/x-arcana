@@ -78,7 +78,7 @@ final class ScenePerformanceTests: XCTestCase {
             hits += combat.update(deltaTime: 0.05, targets: [target])
         }
         XCTAssertEqual(hits.count, 2)
-        XCTAssertEqual(hits.map(\.damage).sorted(), [1, 2])
+        XCTAssertEqual(hits.map(\.damage), [1, 1])
         XCTAssertTrue(hits.allSatisfy { $0.node === enemy })
         XCTAssertTrue([alan, albert].allSatisfy { $0.parent === scene.rootNode && !$0.isHidden })
     }

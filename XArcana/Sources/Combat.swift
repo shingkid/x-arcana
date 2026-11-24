@@ -10,7 +10,6 @@ final class Combat {
     enum Event: Equatable {
         case waveCleared(Int)
         case waveStarted(Int)
-        case levelUp(level: Int, maxHealth: Int, maxMana: Int)
     }
 
     struct Identity: Decodable {
@@ -40,12 +39,12 @@ final class Combat {
             lastMeleeAttack = attack
             meleeAttackCount += 1
         }
-        private(set) var health = 3
+        private(set) var health: Double = 2
         private(set) var isTransfigured = false
         func setTransfigured(_ value: Bool) { isTransfigured = value }
         private(set) var slowRemaining: TimeInterval = 0
         func setSlowRemaining(_ value: TimeInterval) { slowRemaining = value }
-        func setHealth(_ value: Int) { health = value }
+        func setHealth(_ value: Double) { health = value }
     }
 
     static let identities: [Identity] = {
@@ -63,7 +62,7 @@ final class Combat {
         let identity: Identity
         let kind: Kind
         let phase: Float
-        var health = 3
+        var health: Double = 2
         var attackTimer: TimeInterval
         var motionTime: TimeInterval = 0
         var meleeMotion: (time: TimeInterval, attack: MeleeAttack)?
@@ -117,6 +116,7 @@ final class Combat {
     private var spawnedThisWave = 0
     private var nextSpawn: TimeInterval = 0
     private var shotCooldown: TimeInterval = 0
+    private var meleeCooldown: TimeInterval = 0
     private var shieldNode: SCNNode?
     private var countdownNotifyDelay: TimeInterval = 0
     private lazy var allies = SummonCombat(scene: scene, environment: environment)
@@ -136,7 +136,7 @@ final class Combat {
     var remaining: Int { enemies.filter { $0.health > 0 }.count }
     var pendingSpawns: Int { run.snapshot.hasStarted && run.snapshot.countdownRemaining <= 0 ? 8 - spawnedThisWave : 0 }
     var onStatus: ((String) -> Void)?
-    var summary: String { "Wave \(wave) · \(remaining) zombies · \(kills) defeated" }
+    var summary: String { "Level \(wave) · \(remaining) zombies · \(kills) defeated" }
 
     convenience init(
         scene: SCNScene, camera: SCNNode, floorY: Float,
@@ -187,6 +187,7 @@ final class Combat {
         nextWave = nil
         nextNotification = 0
         shotCooldown = 0
+        meleeCooldown = 0
         lastTime = nil
         blockedAttacks = 0
         lastRejection = nil
@@ -289,16 +290,19 @@ final class Combat {
         if wasNyanActive, run.snapshot.nyanRemaining <= 0 {
             finishTransfiguration(defeat: true)
         }
-        if run.snapshot.shieldRemaining <= 0 {
+        if (run.snapshot.shieldHealth ?? 0) <= 0 {
             shieldNode?.removeFromParentNode()
             shieldNode = nil
+        } else {
+            shieldNode?.simdPosition = camera.simdWorldPosition + SIMD3(0, -0.55, 0)
         }
         shotCooldown = max(0, shotCooldown - dt)
+        meleeCooldown = max(0, meleeCooldown - dt)
         if let nextWave, elapsed >= nextWave {
             self.nextWave = nil
             run.nextWave()
             spawnWave()
-            onStatus?("A new undead wave has entered. \(summary)")
+            onStatus?("A new level has started. \(summary)")
             onChange?()
         }
         if pendingSpawns > 0, elapsed >= nextSpawn {
@@ -377,19 +381,28 @@ final class Combat {
                     if stillLiving, horizontalDistance(enemy.center, contact) <= 1.35,
                         abs(contact.y - enemy.center.y) < 1.5
                     {
-                        let amount = pending.attack == .swipe ? 1 : 3
+                        let amount = 1
                         if let ally = pending.target {
                             allies.damage(node: ally, amount: amount)
-                        } else if run.snapshot.shieldRemaining > 0 {
-                            blockedAttacks += 1
-                            if let shieldNode { SpellVisuals.shieldContact(on: shieldNode, at: enemy.center) }
-                            onStatus?("Shield blocked a \(pending.attack.rawValue).")
                         } else {
+                            let shielded = (run.snapshot.shieldHealth ?? 0) > 0
                             run.damage(amount)
-                            onStatus?(
-                                run.snapshot.isGameOver
-                                    ? "Game over. Score \(run.snapshot.score)."
-                                    : "Zombie \(pending.attack.rawValue): -\(amount) health.")
+                            if shielded {
+                                blockedAttacks += 1
+                                if let shieldNode { SpellVisuals.shieldContact(on: shieldNode, at: enemy.center) }
+                                onStatus?(
+                                    "Shield blocked a \(pending.attack.rawValue). \(run.snapshot.shieldHealth ?? 0) shield HP left."
+                                )
+                                if run.snapshot.shieldHealth == 0 {
+                                    shieldNode?.removeFromParentNode()
+                                    shieldNode = nil
+                                }
+                            } else {
+                                onStatus?(
+                                    run.snapshot.isGameOver
+                                        ? "Game over. Score \(run.snapshot.score)."
+                                        : "Zombie \(pending.attack.rawValue): -\(amount) health.")
+                            }
                             onChange?()
                             if run.snapshot.isGameOver {
                                 finishTransfiguration(defeat: false)
@@ -412,7 +425,7 @@ final class Combat {
         }
         for impact in allies.update(deltaTime: dt, targets: targets) {
             guard let enemy = enemies.first(where: { $0.node === impact.node }), enemy.health > 0 else { continue }
-            if impact.damage > 0 { damage(enemy, amount: impact.damage) }
+            if impact.damage > 0 { damage(enemy, amount: Double(impact.damage)) }
             if impact.slowDuration > 0 {
                 applySlow(to: enemy, duration: impact.slowDuration)
             }
@@ -498,10 +511,38 @@ final class Combat {
             guard length <= 5, length > 0.001, simd_dot(offset / length, direction) >= cos(Float.pi / 6) else {
                 continue
             }
-            damage(enemy)
+            damage(enemy, amount: 2)
             if enemy.health > 0 { applySlow(to: enemy, duration: 6) }
         }
         onChange?()
+        return true
+    }
+
+    @discardableResult
+    func melee(toward target: SIMD3<Float>) -> Bool {
+        guard validateAction(cost: 0, usesShotCooldown: false) else { return false }
+        guard meleeCooldown <= 0 else {
+            lastRejection = .cooldown
+            return false
+        }
+        let eye = camera.simdWorldPosition
+        let ray = target - eye
+        guard target.x.isFinite, target.y.isFinite, target.z.isFinite, simd_length_squared(ray) > 0.0001 else {
+            lastRejection = .invalidTarget
+            return false
+        }
+        let direction = simd_normalize(ray)
+        let victim = enemies.filter { enemy in
+            guard enemy.health > 0, enemy.transfiguration == nil else { return false }
+            let offset = enemy.center - eye
+            let distance = simd_length(offset)
+            return distance <= 2 && distance > 0.001 && simd_dot(offset / distance, direction) >= 0.5
+        }.min { simd_distance($0.center, eye) < simd_distance($1.center, eye) }
+        meleeCooldown = 0.5
+        if let victim {
+            damage(victim)
+            burst(at: victim.center, color: .cyan)
+        }
         return true
     }
 
@@ -520,7 +561,7 @@ final class Combat {
             lastRejection = .notReady
             return false
         }
-        guard run.snapshot.shieldCooldownRemaining <= 0 else {
+        guard (run.snapshot.shieldHealth ?? 0) == 0, run.snapshot.shieldCooldownRemaining <= 0 else {
             lastRejection = .cooldown
             return false
         }
@@ -680,7 +721,7 @@ final class Combat {
         projectiles.append(
             Projectile(
                 node: node, velocity: travel * speed,
-                blastRadius: attack == .fireball ? 2 : 0, isLightning: attack == .zap))
+                blastRadius: attack == .fireball ? 3 : 0, isLightning: attack == .zap))
         shotCooldown = 0.24
         _ = run.spend(cost)
         onChange?()
@@ -716,10 +757,13 @@ final class Combat {
             var victim: Enemy?
             for enemy in enemies where enemy.health > 0 && enemy.transfiguration == nil {
                 let foot = enemy.node.simdPosition
+                let padding: Float = projectile.blastRadius > 0 ? 0.2 : 0.12
                 if let fraction = CombatGeometry.hitFraction(
                     from: start, to: end,
-                    minimum: foot + SIMD3(-enemy.kind.halfWidth, 0.12, -enemy.kind.halfDepth) * enemy.node.simdScale,
-                    maximum: foot + SIMD3(enemy.kind.halfWidth, 1.82, enemy.kind.halfDepth) * enemy.node.simdScale),
+                    minimum: foot + SIMD3(-enemy.kind.halfWidth, 0.12, -enemy.kind.halfDepth) * enemy.node.simdScale
+                        - SIMD3(repeating: padding),
+                    maximum: foot + SIMD3(enemy.kind.halfWidth, 1.82, enemy.kind.halfDepth) * enemy.node.simdScale
+                        + SIMD3(repeating: padding)),
                     fraction < (impact ?? 2)
                 {
                     impact = fraction
@@ -749,7 +793,7 @@ final class Combat {
                     } else {
                         burst(at: point, color: victim == nil ? .cyan : .orange)
                     }
-                    if let victim { damage(victim) }
+                    if let victim { damage(victim, amount: projectile.isLightning ? 2 : 1) }
                 }
             }
             if impact != nil || projectile.age > 4 || end.y < floorY || !environment.projectileBounds.contains(end) {
@@ -762,7 +806,7 @@ final class Combat {
         }
     }
 
-    private func damage(_ enemy: Enemy, amount: Int = 1) {
+    private func damage(_ enemy: Enemy, amount: Double = 1) {
         guard !run.snapshot.isGameOver, enemy.health > 0, enemy.transfiguration == nil else { return }
         enemy.health = max(0, enemy.health - amount)
         enemy.node.setHealth(enemy.health)
@@ -773,14 +817,7 @@ final class Combat {
             return
         }
         enemy.node.opacity = 1
-        let previousLevel = run.snapshot.level
         run.recordKill()
-        if run.snapshot.level != previousLevel {
-            onEvent?(
-                .levelUp(
-                    level: run.snapshot.level, maxHealth: run.snapshot.maxHealth,
-                    maxMana: Int(run.snapshot.maxMana)))
-        }
         enemy.pendingMelee = nil
         onChange?()
         enemy.node.isDefeated = true
@@ -799,7 +836,7 @@ final class Combat {
             onEvent?(.waveCleared(wave))
             onChange?()
             nextWave = elapsed + Self.waveBreakDuration
-            onStatus?("Wave cleared. The next wave starts in twenty seconds.")
+            onStatus?("Level cleared. The next level starts in twenty seconds.")
         } else {
             onStatus?("\(enemy.identity.name)'s \(enemy.kind.rawValue) defeated. \(summary)")
         }
@@ -849,8 +886,11 @@ final class Combat {
 
     private func explode(at point: SIMD3<Float>, radius: Float) {
         SpellVisuals.fireball(at: point, radius: radius, floorY: floorY, on: root)
-        for enemy in enemies where enemy.health > 0 && simd_distance(enemy.center, point) <= radius {
-            damage(enemy)
+        let targets = enemies.filter { $0.health > 0 && $0.transfiguration == nil }
+        let damages = CombatGeometry.fireballDamages(
+            distances: targets.map { simd_distance($0.center, point) }, radius: radius)
+        for (enemy, amount) in zip(targets, damages) where amount > 0 {
+            damage(enemy, amount: amount)
         }
     }
 
@@ -903,6 +943,17 @@ final class Combat {
 
 /// Swept collision prevents fast arrows from passing through enemies between frames.
 enum CombatGeometry {
+    static func fireballDamages(distances: [Float], radius: Float) -> [Double] {
+        guard radius.isFinite, radius > 0 else { return distances.map { _ in 0 } }
+        let weights = distances.map { distance -> Double in
+            guard distance.isFinite, distance >= 0, distance <= radius else { return 0 }
+            return max(0.1, 1 - Double(distance / radius))
+        }
+        let total = weights.reduce(0, +)
+        guard total > 0 else { return weights }
+        return weights.map { 5 * $0 / total }
+    }
+
     static func hitFraction(
         from start: SIMD3<Float>, to end: SIMD3<Float>,
         minimum: SIMD3<Float>, maximum: SIMD3<Float>

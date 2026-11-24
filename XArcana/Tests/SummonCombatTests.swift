@@ -1,5 +1,6 @@
 import SceneKit
 import XCTest
+import simd
 
 @testable import XArcana
 
@@ -55,7 +56,7 @@ final class SummonCombatTests: XCTestCase {
         XCTAssertTrue(advance(combat, seconds: 0.5, targets: [moved]).isEmpty)
     }
 
-    func testAlbertSlamsForTwoDamageInsideRadiusWithCooldown() {
+    func testAlbertSlamsForOneDamageInsideRadiusWithCooldown() {
         let scene = SCNScene()
         let combat = SummonCombat(scene: scene)
         _ = companion(.albert, in: combat)
@@ -64,7 +65,7 @@ final class SummonCombatTests: XCTestCase {
         let far = target(at: SIMD3(1.4, 1, 0), in: scene)
         let hits = advance(combat, seconds: 1.15, targets: [near, clustered, far])
         XCTAssertEqual(hits.count, 2)
-        XCTAssertTrue(hits.allSatisfy { $0.damage == 2 })
+        XCTAssertTrue(hits.allSatisfy { $0.damage == 1 })
         XCTAssertFalse(hits.contains { $0.node === far.node })
         XCTAssertTrue(advance(combat, seconds: 2.8, targets: [near, clustered, far]).isEmpty)
         XCTAssertEqual(advance(combat, seconds: 0.7, targets: [near, clustered, far]).count, 2)
@@ -107,7 +108,7 @@ final class SummonCombatTests: XCTestCase {
         let near = target(at: SIMD3(0, 1, 1), in: scene)
         let clustered = target(at: SIMD3(1, 1, 0), in: scene)
         let slam = advance(combat, seconds: 1.1, targets: [near, clustered])
-        XCTAssertEqual(slam.map(\.damage), [2, 2])
+        XCTAssertEqual(slam.map(\.damage), [1, 1])
         XCTAssertGreaterThan(ally.slamCooldown, 7)
         XCTAssertNotNil(demon.parent)
     }
@@ -123,12 +124,12 @@ final class SummonCombatTests: XCTestCase {
         combat.damage(node: patronus, amount: 100)
         XCTAssertNotNil(patronus.parent)
         XCTAssertTrue(advance(combat, seconds: 0.4, targets: [isolated, a, b]).isEmpty)
-        XCTAssertGreaterThan(patronus.simdPosition.z, 1.5)
+        XCTAssertGreaterThan(patronus.simdPosition.z, 1.2)
         let hits = advance(combat, seconds: 1.2, targets: [isolated, a, b])
         XCTAssertEqual(hits.count, 2)
         XCTAssertTrue(hits.allSatisfy { $0.damage == 0 && $0.slowDuration == 15 })
         XCTAssertFalse(combat.contains(.patronus))
-        XCTAssertNotNil(patronus.action(forKey: "dissolve"))
+        XCTAssertNil(patronus.parent)
         XCTAssertTrue(advance(combat, seconds: 20, targets: [isolated, a, b]).isEmpty)
     }
 
@@ -158,7 +159,7 @@ final class SummonCombatTests: XCTestCase {
         let a = target(at: SIMD3(0, 1, 1), in: scene)
         let b = target(at: SIMD3(1, 1, 0), in: scene)
         let hits = advance(combat, seconds: 0.45, targets: [a, b])
-        XCTAssertEqual(hits.map(\.damage), [2, 2])
+        XCTAssertEqual(hits.map(\.damage), [1, 1])
         XCTAssertEqual(ally.breathCooldown, 0)
         XCTAssertGreaterThan(ally.slamCooldown, 7)
     }
@@ -192,6 +193,102 @@ final class SummonCombatTests: XCTestCase {
             combat.damage(node: node, amount: kind.maxHealth)
             XCTAssertTrue(combat.physicalTargets.isEmpty)
         }
+    }
+
+    func testFlyingDemonKeepsGroundedTargetAndReturnsAirborneAfterSlam() {
+        let scene = SCNScene()
+        let combat = SummonCombat(scene: scene)
+        let demon = companion(.demon, in: combat)
+        let body = SCNNode()
+        body.name = "DemonSculpture"
+        demon.addChildNode(body)
+        DemonFlight.install(on: body)
+        let ally = combat.companions[0]
+        ally.slamCooldown = 0
+        ally.breathCooldown = 10
+        let a = target(at: SIMD3(0, 1, 1), in: scene)
+        let b = target(at: SIMD3(1, 1, 0), in: scene)
+        _ = combat.update(deltaTime: 0.05, targets: [a, b])
+        XCTAssertEqual(ally.animation, "slam")
+        XCTAssertGreaterThan(body.simdPosition.y, 0.5)
+        XCTAssertEqual(combat.physicalTargets.first?.center.y, 1)
+        let hits = advance(combat, seconds: 0.35, targets: [a, b])
+        XCTAssertEqual(hits.map(\.damage), [1, 1])
+        XCTAssertLessThan(body.simdPosition.y, 0.1)
+        _ = advance(combat, seconds: 0.45, targets: [a, b])
+        XCTAssertGreaterThan(body.simdPosition.y, 0.5)
+        XCTAssertEqual(demon.simdPosition.y, 0)
+        XCTAssertTrue(combat.isLiving(demon))
+        let remote = target(at: SIMD3(0, 1, 3.8), in: scene)
+        ally.cooldown = 10
+        _ = combat.update(deltaTime: 0.05, targets: [remote])
+        XCTAssertNotEqual(ally.animation, "walk", "The airborne devil must not use walking legs")
+        XCTAssertGreaterThan(body.simdPosition.y, 0.5, "A valid claw attack must preserve flight")
+        XCTAssertEqual(demon.simdPosition.y, 0, "The combat root stays reachable by enemy melee")
+    }
+
+    func testPauseFreezesFlightChargeAndSimulationFadeAndResetRemovesAll() {
+        let scene = SCNScene()
+        let combat = SummonCombat(scene: scene)
+        let demon = companion(.demon, in: combat)
+        let body = SCNNode()
+        body.name = "DemonSculpture"
+        demon.addChildNode(body)
+        _ = combat.update(deltaTime: 0.05, targets: [])
+        let altitude = body.simdPosition.y
+        let lifetime = combat.companions[0].lifetime
+        combat.setPaused(true)
+        _ = advance(combat, seconds: 1, targets: [])
+        XCTAssertEqual(body.simdPosition.y, altitude)
+        XCTAssertEqual(combat.companions[0].lifetime, lifetime)
+        combat.setPaused(false)
+        let patronus = companion(.patronus, in: combat)
+        _ = advance(combat, seconds: 3.05, targets: [])
+        XCTAssertFalse(combat.contains(.patronus))
+        XCTAssertNotNil(patronus.parent)
+        combat.setPaused(true)
+        let opacity = patronus.opacity
+        _ = advance(combat, seconds: 1, targets: [])
+        XCTAssertEqual(patronus.opacity, opacity)
+        XCTAssertNotNil(patronus.parent)
+        combat.setPaused(false)
+        _ = advance(combat, seconds: 0.35, targets: [])
+        XCTAssertNil(patronus.parent)
+        let fresh = companion(.patronus, in: combat)
+        _ = advance(combat, seconds: 3.05, targets: [])
+        combat.reset()
+        XCTAssertNil(fresh.parent)
+        XCTAssertTrue(combat.companions.isEmpty)
+        XCTAssertTrue(scene.rootNode.childNodes.isEmpty)
+    }
+
+    func testPatronusEntryStaysAtFloorAndFollowsCurvedPath() {
+        let scene = SCNScene()
+        let combat = SummonCombat(scene: scene)
+        let node = SCNNode()
+        node.simdPosition = SIMD3(3, 7, 4.5)
+        combat.register(kind: .patronus, node: node)
+        XCTAssertEqual(node.simdPosition, SIMD3(3, 0, 4.5))
+        let a = target(at: SIMD3(0, 1, 0), in: scene)
+        let b = target(at: SIMD3(0.7, 1, 0), in: scene)
+        _ = advance(combat, seconds: 0.6, targets: [a, b])
+        let ally = combat.companions[0]
+        XCTAssertNotNil(ally.chargeControl)
+        XCTAssertEqual(node.simdPosition.y, 0)
+        XCTAssertLessThan(node.simdPosition.z, 4.5)
+        let start = ally.chargeStart!
+        let destination = ally.chargeDestination!
+        let midpoint = (start + destination) * 0.5
+        XCTAssertGreaterThan(simd_distance(ally.chargeControl!, midpoint), 0.5)
+        let before = node.simdPosition
+        combat.setPaused(true)
+        _ = advance(combat, seconds: 1, targets: [a, b])
+        XCTAssertEqual(node.simdPosition, before)
+        combat.setPaused(false)
+        let hits = advance(combat, seconds: 2, targets: [a, b])
+        XCTAssertEqual(Set(hits.map { ObjectIdentifier($0.node) }).count, 2)
+        XCTAssertTrue(hits.allSatisfy { $0.damage == 0 && $0.slowDuration == 15 })
+        XCTAssertNil(node.parent)
     }
 
     @discardableResult

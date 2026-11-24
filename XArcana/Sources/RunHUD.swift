@@ -8,7 +8,6 @@ final class RunHUD: UIView {
     private let score = UILabel()
     private let healthBar = UIProgressView(progressViewStyle: .default)
     private let manaBar = UIProgressView(progressViewStyle: .default)
-    private let xpBar = UIProgressView(progressViewStyle: .default)
 
     override init(frame: CGRect = .zero) {
         super.init(frame: frame)
@@ -30,7 +29,6 @@ final class RunHUD: UIView {
         for (bar, color) in [
             (healthBar, UIColor(red: 0.95, green: 0.38, blue: 0.34, alpha: 1)),
             (manaBar, UIColor(red: 0.35, green: 0.72, blue: 1, alpha: 1)),
-            (xpBar, Palette.gold),
         ] {
             bar.progressTintColor = color
             bar.trackTintColor = Palette.paper.withAlphaComponent(0.16)
@@ -55,24 +53,28 @@ final class RunHUD: UIView {
         progress.frame = CGRect(x: inset, y: y + 34, width: width, height: 18)
         score.frame = CGRect(x: inset + width + gap, y: y + 34, width: width, height: 18)
         score.textAlignment = .right
-        xpBar.frame = CGRect(x: inset, y: y + 57, width: bounds.width - inset * 2, height: 2)
     }
 
     func show(_ run: RunSnapshot) {
         health.text = "HP  \(run.health) / \(run.maxHealth)"
-        let shield =
-            run.shieldRemaining > 0
-            ? " · Shield \(Int(ceil(run.shieldRemaining)))s"
-            : (run.shieldCooldownRemaining > 0 ? " · Shield ready in \(Int(ceil(run.shieldCooldownRemaining)))s" : "")
+        let shield: String
+        if let health = run.shieldHealth, health > 0 {
+            shield = " · Shield \(health) HP"
+        } else if run.shieldHealth == nil, run.shieldRemaining > 0 {
+            shield = " · Shield \(Int(ceil(run.shieldRemaining)))s"
+        } else {
+            shield =
+                run.shieldCooldownRemaining > 0
+                ? " · Shield ready in \(Int(ceil(run.shieldCooldownRemaining)))s" : ""
+        }
         mana.text = "MANA  \(Int(run.mana.rounded(.down))) / \(Int(run.maxMana))\(shield)"
-        progress.text = "LV \(run.level)  ·  \(run.xp) / \(run.xpToNextLevel) XP"
-        score.text = "\(run.score) pts  ·  Wave \(run.wave)"
+        progress.text = "Level \(run.wave)  ·  Best cleared \(run.bestWave)"
+        score.text = "\(run.score) pts  ·  \(run.kills) defeated"
         healthBar.progress = Float(run.health) / Float(max(1, run.maxHealth))
         manaBar.progress = Float(run.mana / max(1, run.maxMana))
-        xpBar.progress = Float(run.xp) / Float(max(1, run.xpToNextLevel))
         health.accessibilityLabel = "Health, \(run.health) of \(run.maxHealth)"
         mana.accessibilityLabel = "Mana, \(Int(run.mana)) of \(Int(run.maxMana))\(shield)"
-        progress.accessibilityLabel = "Level \(run.level), \(run.xp) of \(run.xpToNextLevel) experience"
+        progress.accessibilityLabel = "Level \(run.wave), best cleared level \(run.bestWave)"
     }
 }
 
@@ -80,6 +82,7 @@ final class RunHUD: UIView {
 final class RunSpellGuide: UIView {
     private let gestures = UILabel()
     private let voice = UILabel()
+    private let casting = UILabel()
 
     override init(frame: CGRect = .zero) {
         super.init(frame: frame)
@@ -93,6 +96,12 @@ final class RunSpellGuide: UIView {
             label.numberOfLines = 0
             addSubview(label)
         }
+        casting.font = .systemFont(ofSize: 14, weight: .medium)
+        casting.textAlignment = .center
+        casting.textColor = Palette.paper.withAlphaComponent(0.8)
+        casting.text = "Wave to strike · Hold to draw"
+        casting.accessibilityIdentifier = "wandCastingGuide"
+        addSubview(casting)
         gestures.textColor = Palette.paper
         voice.textColor = Palette.gold
         gestures.accessibilityIdentifier = "wandGestureGuide"
@@ -108,9 +117,11 @@ final class RunSpellGuide: UIView {
         let width = max(0, bounds.width - 24)
         let firstHeight = gestures.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude)).height
         let secondHeight = voice.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude)).height
-        let top = max(6, (bounds.height - firstHeight - secondHeight - 5) / 2)
+        let footerHeight: CGFloat = 17
+        let top = max(6, (bounds.height - firstHeight - secondHeight - footerHeight - 8) / 2)
         gestures.frame = CGRect(x: 12, y: top, width: width, height: firstHeight)
         voice.frame = CGRect(x: 12, y: gestures.frame.maxY + 5, width: width, height: secondHeight)
+        casting.frame = CGRect(x: 12, y: voice.frame.maxY + 3, width: width, height: footerHeight)
     }
 }
 
@@ -167,7 +178,7 @@ final class RunOverView: UIView {
         isHidden = run?.isGameOver != true
         guard let run, run.isGameOver else { return }
         details.text =
-            "\(run.score) points · Level \(run.level)\n\(run.kills) defeated · Wave \(run.wave)\n\nBest score \(run.bestScore)\nBest cleared wave \(run.bestWave)"
+            "\(run.score) points · Level \(run.wave)\n\(run.kills) defeated\n\nBest score \(run.bestScore)\nBest cleared level \(run.bestWave)"
         restart.isEnabled = connected
         restart.alpha = connected ? 1 : 0.5
     }
@@ -400,7 +411,7 @@ final class RunStartView: UIView {
             detail.text =
                 bow
                 ? "Aim with the phone and tap to fire an arrow.\nSay “cast” to switch to the wand."
-                : "Hold, draw, release.\nZ lightning · O fire · V ice\nStar demon · W Nyan · Still shield\nSay “shoot” to switch to the bow."
+                : "Wave to strike · Hold to draw\nZ lightning · O fire · V ice\nStar demon · W Nyan · Still shield\nRelease to cast. Say “shoot” for the bow."
         }
         hint.text = "Point the phone at a choice, then tap to preview.\nDouble-tap to confirm. No motion? Tap to cycle."
     }

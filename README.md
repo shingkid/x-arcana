@@ -25,13 +25,28 @@ See the [build and play guide](X%20Arcana%20Build%20Guide.md) for permissions an
 Point the phone at a world or weapon option, tap to select, and double-tap to confirm.
 The first zombie arrives after the three-second countdown.
 In wand mode, hold the screen, draw, and release.
+Wave without touching the screen to strike a nearby zombie for 1 damage.
 Draw Z for lightning, O for fire, V for ice, a star for the demon, or W for Nyan Cat.
 Hold still for the shield and release after the readiness vibration.
+The shield absorbs 20 damage and stays until depleted.
+It costs 20 MP, has a ten-second cooldown, and does not refill when a new stage begins.
 Say **Nyan** if drawing W is inconvenient.
 Say **cast** or **shoot** to switch weapons.
 Tap to fire the bow.
 Say **Albert**, **Alan**, **Demon**, **Patronus**, **Lumos**, or **Revelio** for the other spells.
 
+Without head tracking, use **WASD** to move and the **arrow keys** to look around during play.
+The iPhone still controls spells and the bow.
+For experimental physical movement, enable **Phone walking** on the Mac and allow the iPhone camera.
+Hold the phone near your torso with the rear camera facing forward.
+Walking pauses during drawing and briefly after release.
+This tracks the phone's position, not the glasses, and can also be previewed on the Mac display.
+
+Start with 100 HP and 100 MP.
+Each level is one stage of eight zombies with 2 HP each, with one spawn every eight seconds.
+Each kill earns 100 score, and clearing the stage earns another 250.
+After a twenty-second break, the next stage begins and adds 10 maximum HP and MP, then fully refills both.
+Kills do not grant XP or increase the level.
 Restart returns to setup at level 1 and keeps best records.
 Reset scores clears current and saved scorekeeping after confirmation.
 
@@ -48,7 +63,8 @@ Reset scores clears current and saved scorekeeping after confirmation.
 
 The game uses UIKit, SceneKit, Core Motion, Speech, and Network frameworks.
 The head tracker uses pinned community XREAL sensor code.
-It provides head rotation, not room mapping, positional tracking, or real-world occlusion.
+The Air 2 helper provides head rotation only.
+Optional ARKit tracking estimates phone translation; neither mode maps furniture for game collisions or real-world occlusion.
 
 ```sh
 python3 XArcana/Tools/SyncProject.py --check

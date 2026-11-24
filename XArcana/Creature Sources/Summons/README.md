@@ -2,7 +2,9 @@
 
 These assets replace the old runtime sphere-and-cone characters with artist-authored anatomical meshes.
 The demon has a skull face, horns, and clawed hands.
-It does not have wings.
+The original model has no wings.
+`DemonFlight` in `Sources/RuneEffects.swift` adds articulated bat wings, attaches them to the chest, and samples flapping with the flight pose.
+The runtime accessories preserve the original mesh and skeleton.
 The Patronus uses a detailed stag mesh with a translucent silver-blue SceneKit material.
 Its bright edges, drifting particles, and animated wisps are applied in `Sources/RuneEffects.swift`.
 The Blender stag preview shows the underlying mesh and maps, not the final spirit effect.
@@ -34,7 +36,9 @@ The stag is 2.10 m tall including its antlers.
 Both models retain weighted skeletons and detailed surfaces.
 The demon has 58 bones and authored idle, walk, two-claw, ground-slam, and fire-breath clips.
 The stag has 31 bones and reuses the source Run action for its charge.
-The runtime applies the source Idle action while the stag waits.
+The stag enters from the camera's lower-right foreground and runs along a curved path through a nearby cluster.
+Its fade and removal use simulation time.
+The flying devil samples its existing attack clips with tucked legs and a dive for ground contact.
 The exporter samples joint transforms at 24 frames per second and stores named clips beside each USDZ.
 `CharacterAnimation` interpolates these cached poses and changes bones only.
 Combat controls movement through the room and damage.

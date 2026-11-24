@@ -1,4 +1,5 @@
 #if targetEnvironment(macCatalyst)
+    import GameController
     import UIKit
 
     /// The world outlives controller connections and Mac window focus changes.
@@ -9,6 +10,8 @@
         private lazy var head = HeadLink(room: encounter.room) { [weak self] in self?.publish() }
         private let connectionLabel = UILabel()
         private let metricsLabel = UILabel()
+        private let movementLabel = UILabel()
+        private let walking = UIButton(type: .system)
         private let rate = UISegmentedControl(items: ["60 fps", "120 fps"])
         private var connected = false
         private var ready = false
@@ -25,6 +28,7 @@
             encounter.attach()
             encounter.stage.accessibilityIdentifier = "macGameWorld"
             encounter.onState = { [weak self] in self?.publish() }
+            encounter.desktopInput = { [weak self] in self?.readDesktopInput() ?? DesktopMovementInput() }
             let bar = UIStackView()
             bar.axis = .horizontal
             bar.alignment = .center
@@ -52,6 +56,13 @@
             rate.accessibilityIdentifier = "renderRate"
             rate.setContentHuggingPriority(.required, for: .horizontal)
             bar.addArrangedSubview(rate)
+            walking.setTitle("Phone walking: off", for: .normal)
+            walking.accessibilityIdentifier = "phoneWalking"
+            walking.accessibilityHint =
+                "Experimental camera tracking. Hold the phone near your torso with its rear camera facing forward. Movement pauses while drawing."
+            walking.addTarget(self, action: #selector(toggleWalking), for: .touchUpInside)
+            walking.setContentHuggingPriority(.required, for: .horizontal)
+            bar.addArrangedSubview(walking)
             let center = UIButton(type: .system)
             center.setTitle("Center view", for: .normal)
             center.addTarget(self, action: #selector(centerView), for: .touchUpInside)
@@ -60,6 +71,18 @@
                 bar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
                 bar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
                 bar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            ])
+            movementLabel.font = .systemFont(ofSize: 12, weight: .medium)
+            movementLabel.textColor = Palette.paper
+            movementLabel.backgroundColor = Palette.ink.withAlphaComponent(0.9)
+            movementLabel.numberOfLines = 2
+            movementLabel.accessibilityIdentifier = "movementGuide"
+            movementLabel.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview(movementLabel)
+            NSLayoutConstraint.activate([
+                movementLabel.topAnchor.constraint(equalTo: bar.bottomAnchor, constant: 6),
+                movementLabel.leadingAnchor.constraint(equalTo: bar.leadingAnchor, constant: 8),
+                movementLabel.trailingAnchor.constraint(lessThanOrEqualTo: bar.trailingAnchor, constant: -8),
             ])
             server.onInput = { [weak self] input in
                 guard let self, self.ready else { return }
@@ -91,8 +114,32 @@
             }
         }
 
-        @objc private func centerView() { encounter.room.centerView() }
+        @objc private func centerView() { encounter.recenterMovement() }
         @objc private func changeRate() { encounter.setFrameRate(rate.selectedSegmentIndex == 1 ? 120 : 60) }
+
+        @objc private func toggleWalking() {
+            encounter.phoneWalkingEnabled.toggle()
+            publish()
+        }
+
+        private func readDesktopInput() -> DesktopMovementInput {
+            guard let window = view.window, window.isKeyWindow,
+                window.windowScene?.activationState == .foregroundActive,
+                let keyboard = GCKeyboard.coalesced?.keyboardInput
+            else {
+                encounter.resetDesktopInput()
+                return DesktopMovementInput()
+            }
+            func down(_ key: GCKeyCode) -> Float { keyboard.button(forKeyCode: key)?.isPressed == true ? 1 : 0 }
+            let modifiers: [GCKeyCode] = [.leftGUI, .rightGUI, .leftControl, .rightControl, .leftAlt, .rightAlt]
+            guard !modifiers.contains(where: { down($0) > 0 }) else {
+                encounter.resetDesktopInput()
+                return DesktopMovementInput()
+            }
+            return DesktopMovementInput(
+                move: SIMD2(down(.keyD) - down(.keyA), down(.keyW) - down(.keyS)),
+                look: SIMD2(down(.rightArrow) - down(.leftArrow), down(.upArrow) - down(.downArrow)))
+        }
 
         private func publish() {
             let tracking = encounter.room.trackingMessage
@@ -103,6 +150,17 @@
             let timing = encounter.stage.frameTiming
             metricsLabel.text =
                 ready && timing.fps > 0 ? String(format: "%.0f fps · %.1f ms", timing.fps, timing.p95 * 1000) : ""
+            let headTracked = encounter.room.isHeadTracked
+            walking.isHidden = !ready
+            walking.isEnabled = ready && connected
+            walking.setTitle(encounter.phoneWalkingEnabled ? "Phone walking: on" : "Phone walking: off", for: .normal)
+            movementLabel.text =
+                encounter.phoneWalkingEnabled
+                ? encounter.walkingStatus
+                : (headTracked
+                    ? "Air 2 tracks head turns. Enable Phone walking for experimental position tracking."
+                    : "WASD to move · Arrow keys to look · iPhone to cast")
+            movementLabel.isHidden = !ready
             server.broadcast(
                 HostState(
                     status: encounter.status,
@@ -110,7 +168,8 @@
                     battle: encounter.battleStatus, headStatus: tracking,
                     isSeeThrough: encounter.room.isSeeThrough, ready: ready, run: encounter.runSnapshot,
                     castPreview: encounter.castPreview, shieldReady: encounter.shieldReady,
-                    setupStep: encounter.runSnapshot.hasStarted ? nil : encounter.setupStep, canResetScores: true))
+                    setupStep: encounter.runSnapshot.hasStarted ? nil : encounter.setupStep, canResetScores: true,
+                    supportsPhonePosition: true, phoneWalkingEnabled: encounter.phoneWalkingEnabled))
         }
     }
 #endif

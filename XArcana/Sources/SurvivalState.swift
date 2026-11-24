@@ -40,14 +40,17 @@ struct RunSnapshot: Codable, Equatable {
     var mana: Double = 100
     var maxMana: Double = 100
     var level: Int = 1
+    // Kept for older peers. Current levels identify stages, without experience points.
     var xp: Int = 0
-    var xpToNextLevel: Int = 40
+    var xpToNextLevel: Int = 0
     var score: Int = 0
     var kills: Int = 0
     var wave: Int = 1
     var bestScore: Int = 0
     var bestWave: Int = 0
     var isGameOver: Bool = false
+    var shieldHealth: Int? = 0
+    // Legacy timed-shield snapshots remain decodable. New shields have no duration.
     var shieldRemaining: Double = 0
     var shieldCooldownRemaining: Double = 0
     var hasStarted: Bool = true
@@ -58,6 +61,8 @@ struct RunSnapshot: Codable, Equatable {
 /// All times are simulation times, so pause and game over stop regeneration.
 final class SurvivalState {
     static let nyanDuration: TimeInterval = 27
+    static let manaRegenerationDelay: TimeInterval = 2
+    static let manaRegenerationPerSecond: Double = 4
     private(set) var snapshot: RunSnapshot
     private var regenerationDelay: TimeInterval = 0
     private let defaults: UserDefaults?
@@ -75,11 +80,10 @@ final class SurvivalState {
             deltaTime.isFinite, deltaTime > 0
         else { return }
         snapshot.nyanRemaining = max(0, snapshot.nyanRemaining - deltaTime)
-        snapshot.shieldRemaining = max(0, snapshot.shieldRemaining - deltaTime)
         snapshot.shieldCooldownRemaining = max(0, snapshot.shieldCooldownRemaining - deltaTime)
         let regenerationTime = max(0, deltaTime - regenerationDelay)
         regenerationDelay = max(0, regenerationDelay - deltaTime)
-        snapshot.mana = min(snapshot.maxMana, snapshot.mana + regenerationTime * 8)
+        snapshot.mana = min(snapshot.maxMana, snapshot.mana + regenerationTime * Self.manaRegenerationPerSecond)
     }
 
     func canSpend(_ cost: Double) -> Bool {
@@ -91,7 +95,7 @@ final class SurvivalState {
     func spend(_ cost: Double) -> Bool {
         guard canSpend(cost) else { return false }
         snapshot.mana -= cost
-        if cost > 0 { regenerationDelay = 1 }
+        if cost > 0 { regenerationDelay = Self.manaRegenerationDelay }
         return true
     }
 
@@ -117,15 +121,19 @@ final class SurvivalState {
 
     @discardableResult
     func activateShield(manaCost: Double = 20) -> Bool {
-        guard snapshot.shieldCooldownRemaining <= 0, spend(manaCost) else { return false }
-        snapshot.shieldRemaining = 5
+        guard (snapshot.shieldHealth ?? 0) == 0, snapshot.shieldCooldownRemaining <= 0, spend(manaCost) else {
+            return false
+        }
+        snapshot.shieldHealth = 20
         snapshot.shieldCooldownRemaining = 10
         return true
     }
 
     func damage(_ amount: Int) {
         guard !snapshot.isGameOver, amount > 0 else { return }
-        snapshot.health = max(0, snapshot.health - amount)
+        let absorbed = min(snapshot.shieldHealth ?? 0, amount)
+        snapshot.shieldHealth = (snapshot.shieldHealth ?? 0) - absorbed
+        snapshot.health = max(0, snapshot.health - (amount - absorbed))
         snapshot.isGameOver = snapshot.health == 0
         if snapshot.isGameOver { snapshot.nyanRemaining = 0 }
     }
@@ -134,16 +142,6 @@ final class SurvivalState {
         guard !snapshot.isGameOver else { return }
         snapshot.kills += 1
         snapshot.score += 100
-        snapshot.xp += 10
-        while snapshot.xp >= snapshot.xpToNextLevel {
-            snapshot.xp -= snapshot.xpToNextLevel
-            snapshot.level += 1
-            snapshot.xpToNextLevel = 40 + 20 * (snapshot.level - 1)
-            snapshot.maxHealth += 10
-            snapshot.maxMana += 10
-            snapshot.health = min(snapshot.maxHealth, snapshot.health + 20)
-            snapshot.mana = snapshot.maxMana
-        }
         saveRecords()
     }
 
@@ -154,7 +152,16 @@ final class SurvivalState {
         saveRecords()
     }
 
-    func nextWave() { snapshot.wave += 1 }
+    func nextWave() {
+        guard snapshot.hasStarted, snapshot.countdownRemaining <= 0, !snapshot.isGameOver else { return }
+        snapshot.wave += 1
+        snapshot.level = snapshot.wave
+        snapshot.maxHealth += 10
+        snapshot.maxMana += 10
+        snapshot.health = snapshot.maxHealth
+        snapshot.mana = snapshot.maxMana
+        regenerationDelay = 0
+    }
 
     func restart(hasStarted: Bool = true) {
         let bestScore = snapshot.bestScore
@@ -198,6 +205,7 @@ extension RunSnapshot {
         bestScore = try values.decodeIfPresent(Int.self, forKey: .bestScore) ?? bestScore
         bestWave = try values.decodeIfPresent(Int.self, forKey: .bestWave) ?? bestWave
         isGameOver = try values.decodeIfPresent(Bool.self, forKey: .isGameOver) ?? isGameOver
+        shieldHealth = try values.decodeIfPresent(Int.self, forKey: .shieldHealth)
         shieldRemaining = try values.decodeIfPresent(Double.self, forKey: .shieldRemaining) ?? 0
         shieldCooldownRemaining = try values.decodeIfPresent(Double.self, forKey: .shieldCooldownRemaining) ?? 0
         hasStarted = try values.decodeIfPresent(Bool.self, forKey: .hasStarted) ?? true

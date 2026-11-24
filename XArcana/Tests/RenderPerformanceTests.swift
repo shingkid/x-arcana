@@ -355,7 +355,7 @@ private final class RenderSamples: NSObject, SCNSceneRendererDelegate {
         }
         if link.timestamp >= nextImpact, let root = zombies.first?.parent {
             nextImpact = link.timestamp + 1
-            SpellVisuals.fireball(at: SIMD3(0, 1.1, -0.3), radius: 2, floorY: 0, on: root)
+            SpellVisuals.fireball(at: SIMD3(0, 1.1, -0.3), radius: 3, floorY: 0, on: root)
             SpellVisuals.lightning(at: SIMD3(-1.2, 1.1, 0), on: root)
             SpellVisuals.ice(from: SIMD3(0.1, 1.4, 3), direction: SIMD3(0, 0, -1), on: root)
             impactBursts += 1

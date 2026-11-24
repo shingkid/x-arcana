@@ -44,26 +44,57 @@ If the lenses remain dark when unplugged, the game cannot change that physical d
 The first zombie appears after the countdown.
 
 This setup tracks head rotation only.
-It does not map furniture, track physical movement, or hide enemies behind real objects.
+Optional Phone walking adds experimental translation from the iPhone camera.
+It does not map furniture for game collisions or hide enemies behind real objects.
+
+## Move around
+
+Without Air 2 head tracking, use **WASD** to walk and the **arrow keys** to look during a run.
+The game window must be active.
+Movement stops during setup, countdown, disconnection, and game over.
+Release held keys after switching windows or restarting, then press them again.
+Restart returns the player to the starting position.
+
+To use physical movement, enable **Phone walking: off** in the Mac toolbar.
+Allow Camera access on the iPhone when requested.
+Keep the rear camera uncovered and point it forward while holding the phone near your torso.
+Start the run, then walk to move within the game's floor boundaries.
+The mode also works on the Mac display for testing without glasses.
+When Phone walking is on, it replaces WASD translation; arrow-key looking remains available without head tracking.
+
+Drawing pauses translation, including a short delay after release so you can lower the wand again.
+Tracking loss, reconnects, and sudden position jumps pause or rebase movement instead of teleporting the player.
+Use **Center view** while looking and pointing forward to recalibrate.
+Toggle Phone walking off and on if camera tracking fails.
+
+This is experimental phone-position tracking, not measured head position.
+Arm movements outside a held gesture can still move the player.
+Use a clear, well-lit area and stay within the glasses cable's reach.
+The game cannot detect real obstacles or make simultaneous walking and wand gestures reliable with one handheld tracker.
+Camera images stay on the phone; only position, heading, and tracking status are sent to the Mac.
 
 ## Spells
 
 Say **cast** to select the wand.
 Hold the phone screen, move its top edge to draw, then release.
 Loose shapes and uneven strokes are accepted.
+A broad, open circle is enough for fire.
+Wave the wand without touching the screen for a free, short-range melee strike.
+Melee deals 1 damage and has a half-second recovery.
 The wand tip shows recognition feedback before release.
+Holding starts the drawing where the phone currently aims, without moving the wand to the centre.
 
 | Input | Result | MP |
 | --- | --- | ---: |
-| Z or zigzag | Single-target lightning, 1 damage | 5 |
-| O, oval, or open circle | Fireball, 1 area damage | 15 |
-| V | Ice cone, 1 damage and a six-second slow | 15 |
-| Still hold for about one second, then release | Five-second shield, ten-second cooldown | 20 |
-| Star or **Demon** | Demon ally | 40 |
-| W or **Nyan** | 27-second rainbow curse that clears the current wave | 80 |
+| Z or zigzag | Single-target lightning, 2 damage | 5 |
+| O, oval, or open circle | Fireball, 5 total damage shared across a 3-metre blast; nearer zombies take more | 15 |
+| V | Ice cone, 2 damage and a six-second slow | 15 |
+| Still hold for about one second, then release | 20 shield HP, lasting until absorbed; ten-second cooldown | 20 |
+| Star or **Demon** | Winged flying devil ally | 40 |
+| W or **Nyan** | 27-second rainbow curse that clears the current stage | 80 |
 | **Albert** | Large ally with a body slam | 30 |
 | **Alan** | Ally with a badminton racket | 25 |
-| **Patronus** or **Expecto Patronum** | Running charge with a fifteen-second slow | 30 |
+| **Patronus** or **Expecto Patronum** | Curved run from the lower-right foreground, fifteen-second slow, then vanish | 30 |
 | **Lumos** | Room lighting | 0 |
 | **Revelio** | Hidden writing | 0 |
 
@@ -77,16 +108,29 @@ The Nyan curse can coexist with physical allies.
 ## Survival
 
 Start with 100 HP and 100 MP.
-Zombies have 3 HP and use melee attacks only: swipes deal 1 damage and bites deal 3.
-One zombie arrives every eight seconds, up to eight per wave.
-The next wave begins twenty seconds after the previous one is cleared.
-Nyan immediately transforms the current wave's remaining slots into harmless cats.
+Zombies have 2 HP and use melee attacks only.
+Swipes and bites each deal 1 damage.
+Wand strikes, arrows, and physical ally attacks deal 1 damage.
+Lightning, ice, and the devil's fire breath deal 2 damage.
+Fireball shares 5 damage across the blast with more damage near its centre.
+Fractional zombie health is retained after a blast.
+Shield HP absorbs incoming damage before player HP and does not expire with time.
+Casting an active shield again costs no mana and does not refill it.
+One zombie arrives every eight seconds, up to eight per stage.
+Each kill earns 100 score.
+Clearing a stage earns 250 score and starts a twenty-second break.
+The next level begins when that break ends.
+Nyan immediately transforms the current stage's remaining slots into harmless cats.
 Each cat wanders independently in random directions across the view, with a pixel-art body and rainbow trail.
 They disappear when the curse ends.
 
-Mana recovers at 8 MP per simulation second after a one-second delay from spending.
-A level-up adds 10 maximum HP and MP, restores 20 HP, and fully refills mana.
-This refill can make mana rise sharply after a kill.
+Mana recovers at 4 MP per simulation second after a two-second delay from spending.
+A 15 MP cast reduces 100 MP to 85 immediately and takes 5.75 seconds to recover fully without another cast or stage transition.
+The level counts stages, starting at level 1.
+Kills do not award XP or increase the level.
+When the next stage begins, maximum HP and MP each increase by 10, and both resources refill completely.
+Clearing a stage does not immediately refill them.
+The stage transition does not refill an active shield.
 Accepted casting feedback shows the spell cost.
 A disconnected controller pauses combat, regeneration, and status timers.
 
@@ -95,7 +139,7 @@ A disconnected controller pauses combat, regeneration, and status timers.
 - No controller connection: open both apps and check Local Network permission and the shared network.
 - No head tracking: check the direct USB-C cable, helper process, and sensor status.
 - Dark AR: remove the light shield and distinguish the Mac output from the optical view through the lenses.
-- Unexpected mana refill: check for a level-up announcement.
+- Unexpected mana refill: check whether a new stage has begun.
 - Difficult W: use two loose downward valleys or say **Nyan**.
 - Missing asset: check the game's error message, environment configuration, and asset manifest.
 

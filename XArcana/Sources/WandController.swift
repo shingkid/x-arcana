@@ -72,7 +72,7 @@ final class WandController: UIViewController, UIGestureRecognizerDelegate {
         restart.setTitle("Restart", for: .normal)
         restart.accessibilityIdentifier = "restartRun"
         restart.accessibilityHint =
-            "Return to world and weapon selection for a level-one run. Your best score and wave record are kept."
+            "Return to world and weapon selection for a level-one run. Your best score and level record are kept."
         restart.addTarget(self, action: #selector(restartRun), for: .touchUpInside)
         resetScores.setTitle("Reset scores", for: .normal)
         resetScores.accessibilityIdentifier = "resetScores"
@@ -128,7 +128,9 @@ final class WandController: UIViewController, UIGestureRecognizerDelegate {
     }
 
     func showState() {
-        source.text = session.connectionStatus
+        source.text =
+            session.state.phoneWalkingEnabled == true
+            ? "\(session.connectionStatus)\n\(session.phoneWalkingStatus)" : session.connectionStatus
         let ended = session.state.run?.isGameOver == true
         let canRestart = ended && session.isReady
         restart.isHidden = session.state.run?.hasStarted != true
@@ -207,7 +209,7 @@ final class WandController: UIViewController, UIGestureRecognizerDelegate {
         let alert = UIAlertController(
             title: "Clear all scores?",
             message:
-                "Your best score and wave record will be erased. Choose your world and weapon again before the new level-1 run.",
+                "Your best score and level record will be erased. Choose your world and weapon again before the new level-1 run.",
             preferredStyle: .alert)
         alert.addAction(
             UIAlertAction(title: "Cancel", style: .cancel) { [weak self] _ in

@@ -134,7 +134,7 @@ final class SetupSelectionTests: XCTestCase {
             XCTAssertTrue(stage.bounds.contains(hud.frame))
             XCTAssertGreaterThanOrEqual(guide.frame.minY - hud.frame.maxY, 10)
             let labels = guide.subviews.compactMap { $0 as? UILabel }
-            XCTAssertEqual(labels.count, 2)
+            XCTAssertEqual(labels.count, 3)
             for label in labels {
                 XCTAssertGreaterThanOrEqual(label.font.pointSize, 14)
                 XCTAssertTrue(guide.bounds.contains(label.frame), "The complete spell guide must fit at \(size)")
@@ -144,6 +144,7 @@ final class SetupSelectionTests: XCTestCase {
             let text = labels.compactMap(\.text).joined(separator: " ")
             for invocation in [
                 "Z:", "O:", "V:", "still", "Star", "W:", "Alan", "Albert", "Patronus", "Lumos", "Revelio", "Nyan",
+                "Wave to strike", "Hold to draw",
             ] {
                 XCTAssertTrue(text.localizedCaseInsensitiveContains(invocation), invocation)
             }

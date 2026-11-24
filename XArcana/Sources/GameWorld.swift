@@ -205,6 +205,51 @@ final class GameWorld {
         viewRevision += 1
     }
 
+    var viewHeading: Float {
+        let forward = camera.simdWorldOrientation.act(SIMD3<Float>(0, 0, -1))
+        return atan2(-forward.x, -forward.z)
+    }
+
+    func movePlayer(by displacement: SIMD3<Float>) {
+        guard displacement.x.isFinite, displacement.z.isFinite else { return }
+        let bounds = environment.movementBounds
+        let home = environment.camera.position.vector
+        var next = camera.simdPosition + displacement
+        // The default eye starts just behind the enemy movement area.
+        next.x = min(max(bounds.maxX, home.x), max(min(bounds.minX, home.x), next.x))
+        next.z = min(max(bounds.maxZ, home.z), max(min(bounds.minZ, home.z), next.z))
+        next.y = home.y
+        guard next != camera.simdPosition else { return }
+        camera.simdPosition = next
+        viewRevision += 1
+    }
+
+    func moveDesktop(_ input: DesktopMovementInput, deltaTime: TimeInterval) {
+        guard !isHeadTracked, deltaTime.isFinite, deltaTime > 0,
+            [input.move.x, input.move.y, input.look.x, input.look.y].allSatisfy(\.isFinite)
+        else { return }
+        let dt = Float(min(0.05, deltaTime))
+        if input.look != .zero {
+            let forward = camera.simdOrientation.act(SIMD3<Float>(0, 0, -1))
+            let yaw = viewHeading - input.look.x * dt * 1.2
+            let pitch = max(
+                -Float.pi / 3, min(Float.pi / 3, asin(max(-1, min(1, forward.y))) + input.look.y * dt * 1.2))
+            camera.simdOrientation =
+                simd_quatf(angle: yaw, axis: SIMD3(0, 1, 0))
+                * simd_quatf(angle: pitch, axis: SIMD3(1, 0, 0))
+            viewRevision += 1
+        }
+        guard input.move != .zero else { return }
+        let direction = input.move / max(1, simd_length(input.move))
+        let heading = simd_quatf(angle: viewHeading, axis: SIMD3(0, 1, 0))
+        movePlayer(by: heading.act(SIMD3(direction.x, 0, -direction.y)) * dt * 1.4)
+    }
+
+    func resetPlayerPosition() {
+        camera.simdPosition = environment.camera.position.vector
+        centerView()
+    }
+
     private func reference(for pose: simd_quatf) -> simd_quatf {
         guard usesGravityReference else { return pose }
         let forward = pose.act(SIMD3<Float>(0, 0, -1))

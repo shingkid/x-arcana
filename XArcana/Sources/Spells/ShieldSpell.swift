@@ -7,6 +7,9 @@ extension SpellCatalog {
         manaCost: 20,
         effect: { context in
             if context.combat.shield() { return .accepted }
+            if let health = context.combat.runSnapshot.shieldHealth, health > 0 {
+                return .rejected("Shield already active with \(health) HP.", sparks: true)
+            }
             return .rejected(
                 context.combat.lastRejection == .insufficientMana
                     ? "Shield needs \(Int(SpellCatalog.shield.manaCost)) mana."
@@ -15,5 +18,5 @@ extension SpellCatalog {
         },
         presentation: .effectOwned,
         sound: .onCast(.shield, layers: []),
-        feedback: "Shield active for five seconds.")
+        feedback: "Shield adds 20 protective HP until consumed.")
 }

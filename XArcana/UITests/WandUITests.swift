@@ -587,7 +587,7 @@ import XCTest
             case .sceneMode:
                 seeThrough = input.seeThrough ?? false
                 updateState(status: seeThrough ? "Mac see-through mode." : "Mac fantasy hall mode.")
-            case .sample: break
+            case .sample, .position: break
             case .nextSetupChoice:
                 guard !run.hasStarted else { break }
                 if setupStep == "weapon" { mode = mode == "wand" ? "bow" : "wand" } else { seeThrough.toggle() }

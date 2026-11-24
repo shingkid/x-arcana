@@ -17,9 +17,9 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>2.2</string>
+	<string>2.3</string>
 	<key>CFBundleVersion</key>
-	<string>17</string>
+	<string>18</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UILaunchScreen</key>
@@ -34,6 +34,8 @@
 	<string>Recognize your spell commands and Alan or Albert summons.</string>
 	<key>NSMotionUsageDescription</key>
 	<string>Use the movement of the iPhone to draw runes in the air.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Track the iPhone near your torso for optional walking in X Arcana. Only position and direction are sent to your Mac, never camera images.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Connect the iPhone wand controller to the game running on your Mac.</string>
 	<key>NSBonjourServices</key>

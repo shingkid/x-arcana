@@ -1,10 +1,28 @@
 import Foundation
 import Network
 
+struct PhonePositionSample: Codable, Equatable {
+    enum Quality: String, Codable { case tracking, limited, unavailable, suspended }
+    let session: UUID
+    let x: Float
+    let y: Float
+    let z: Float
+    /// Yaw of the rear camera's forward vector in the AR world's horizontal plane.
+    let heading: Float
+    let quality: Quality
+
+    var isValid: Bool {
+        session != UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+            && [x, y, z, heading].allSatisfy(\.isFinite)
+            && abs(x) <= 1_000 && abs(y) <= 1_000 && abs(z) <= 1_000
+            && abs(heading) <= .pi + 0.0001
+    }
+}
+
 struct WandInput: Codable, Equatable {
     enum Kind: String, Codable {
         case begin, sample, end, cancel, voice, sceneMode, restartRun, resetScores, startRun, nextSetupChoice,
-            confirmSetupChoice
+            confirmSetupChoice, position
     }
     let kind: Kind
     let gesture: UInt64
@@ -13,10 +31,12 @@ struct WandInput: Codable, Equatable {
     let pitch: Float?
     let command: String?
     let seeThrough: Bool?
+    let position: PhonePositionSample?
 
     init(
         kind: Kind, gesture: UInt64 = 0, timestamp: Double = 0, yaw: Float? = nil,
-        pitch: Float? = nil, command: String? = nil, seeThrough: Bool? = nil
+        pitch: Float? = nil, command: String? = nil, seeThrough: Bool? = nil,
+        position: PhonePositionSample? = nil
     ) {
         self.kind = kind
         self.gesture = gesture
@@ -25,6 +45,7 @@ struct WandInput: Codable, Equatable {
         self.pitch = pitch
         self.command = command
         self.seeThrough = seeThrough
+        self.position = position
     }
 }
 
@@ -41,12 +62,15 @@ struct HostState: Codable, Equatable {
     let shieldReady: Bool?
     let setupStep: String?
     let canResetScores: Bool?
+    let supportsPhonePosition: Bool?
+    let phoneWalkingEnabled: Bool?
 
     init(
         status: String = "", mode: String = "wand", isHolding: Bool = false,
         battle: String = "", headStatus: String = "", isSeeThrough: Bool = false, ready: Bool = true,
         run: RunSnapshot? = nil, castPreview: String? = nil, shieldReady: Bool? = nil,
-        setupStep: String? = nil, canResetScores: Bool? = nil
+        setupStep: String? = nil, canResetScores: Bool? = nil,
+        supportsPhonePosition: Bool? = nil, phoneWalkingEnabled: Bool? = nil
     ) {
         self.status = status
         self.mode = mode
@@ -60,6 +84,8 @@ struct HostState: Codable, Equatable {
         self.shieldReady = shieldReady
         self.setupStep = setupStep
         self.canResetScores = canResetScores
+        self.supportsPhonePosition = supportsPhonePosition
+        self.phoneWalkingEnabled = phoneWalkingEnabled
     }
 }
 
@@ -125,14 +151,23 @@ struct ControllerInputValidator {
     private(set) var activeGesture: UInt64?
     private var lastGesture: UInt64 = 0
     private var lastTimestamp: Double = 0
+    private var lastPositionTimestamp: Double = 0
 
     mutating func accept(_ input: WandInput) throws {
         guard input.timestamp.isFinite, input.timestamp >= 0,
             input.yaw?.isFinite != false, input.pitch?.isFinite != false,
             (input.yaw == nil) == (input.pitch == nil),
-            (input.command?.utf8.count ?? 0) <= 128
+            (input.command?.utf8.count ?? 0) <= 128,
+            input.kind == .position || input.position == nil
         else { throw ControllerProtocolError.packet }
         switch input.kind {
+        case .position:
+            guard input.gesture == 0, input.yaw == nil, input.pitch == nil,
+                input.command == nil, input.seeThrough == nil,
+                let position = input.position, position.isValid,
+                input.timestamp > lastPositionTimestamp
+            else { throw ControllerProtocolError.packet }
+            lastPositionTimestamp = input.timestamp
         case .begin:
             guard activeGesture == nil, input.gesture > lastGesture else { throw ControllerProtocolError.phase }
             activeGesture = input.gesture
@@ -165,21 +200,40 @@ struct ControllerInputValidator {
     }
 }
 
-// Assign packet sequences at transmission, after replacing stale idle motion.
+// Assign packet sequences at transmission, after replacing stale continuous input.
 struct ControllerOutbox {
     struct Item {
         let kind: ControllerPacket.Kind
         var input: WandInput?
         var state: HostState?
-        var replaceable: Bool { kind == .state || (kind == .input && input?.kind == .sample && input?.gesture == 0) }
+        fileprivate enum Replacement: Equatable {
+            case state, motion
+            case position(UUID, PhonePositionSample.Quality)
+        }
+        fileprivate var replacement: Replacement? {
+            if kind == .state { return .state }
+            guard kind == .input, let input else { return nil }
+            if input.kind == .sample, input.gesture == 0 { return .motion }
+            if input.kind == .position, let position = input.position {
+                return .position(position.session, position.quality)
+            }
+            return nil
+        }
     }
     static let capacity = 256
     private(set) var items: [Item] = []
 
     mutating func append(_ item: Item) throws {
-        if item.replaceable, let last = items.last, last.replaceable, last.kind == item.kind {
-            items[items.count - 1] = item
-            return
+        if let replacement = item.replacement {
+            for index in items.indices.reversed() {
+                guard let previous = items[index].replacement else { break }
+                if previous == replacement {
+                    items.remove(at: index)
+                    break
+                }
+                // Preserve tracking-state transitions and origin changes as barriers.
+                if case .position = previous, case .position = replacement { break }
+            }
         }
         guard items.count < Self.capacity else { throw ControllerProtocolError.overflow }
         items.append(item)

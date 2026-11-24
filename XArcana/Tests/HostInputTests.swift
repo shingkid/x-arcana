@@ -1,5 +1,6 @@
 import SceneKit
 import XCTest
+import simd
 
 @testable import XArcana
 
@@ -14,7 +15,8 @@ final class HostInputTests: XCTestCase {
         for frame in 1...62 { game.combat.update(at: Double(frame) * 0.05) }
         XCTAssertTrue(game.combat.nyan())
         for frame in 63...610 { game.combat.update(at: Double(frame) * 0.05) }
-        XCTAssertEqual(game.runSnapshot.level, 2)
+        XCTAssertEqual(game.runSnapshot.level, 1, "Clearing the horde does not start the next stage immediately")
+        XCTAssertEqual(game.runSnapshot.xp, 0)
         XCTAssertEqual(game.runSnapshot.score, 1050)
         game.handleVoice(.summonAlan)
         XCTAssertFalse(game.runSnapshot.isGameOver)
@@ -230,10 +232,144 @@ final class HostInputTests: XCTestCase {
         XCTAssertEqual(game.runSnapshot.shieldRemaining, 0)
         game.receive(WandInput(kind: .end, gesture: 4, timestamp: 11.18, yaw: 0, pitch: 0))
         XCTAssertEqual(game.runSnapshot.mana, 80)
-        XCTAssertEqual(game.runSnapshot.shieldRemaining, 5)
+        XCTAssertEqual(game.runSnapshot.shieldRemaining, 0)
+        XCTAssertEqual(game.runSnapshot.shieldHealth, 20)
         XCTAssertFalse(game.shieldReady)
         game.receive(WandInput(kind: .end, gesture: 4, timestamp: 11.19, yaw: 0, pitch: 0))
         XCTAssertEqual(game.runSnapshot.mana, 80)
+    }
+
+    func testActiveShieldShowsHealthInsteadOfReadiness() {
+        let game = host()
+        defer { game.stop() }
+        XCTAssertTrue(game.combat.shield())
+        game.receive(WandInput(kind: .begin, gesture: 6, timestamp: 20, yaw: 0, pitch: 0))
+        for step in 1...70 {
+            game.receive(WandInput(kind: .sample, gesture: 6, timestamp: 20 + Double(step) / 60, yaw: 0, pitch: 0))
+        }
+        XCTAssertFalse(game.shieldReady)
+        XCTAssertEqual(game.castPreview, "Shield active · 20 HP")
+        game.receive(WandInput(kind: .end, gesture: 6, timestamp: 21.18, yaw: 0, pitch: 0))
+        XCTAssertEqual(game.runSnapshot.mana, 80)
+        XCTAssertEqual(game.runSnapshot.shieldHealth, 20)
+    }
+
+    func testUnheldWaveUsesHostMeleeReachAndCostsNoMana() throws {
+        let game = host()
+        defer { game.stop() }
+        let enemy = try XCTUnwrap(
+            game.room.scene.rootNode.childNode(withName: "Undead horde", recursively: false)?
+                .childNodes.compactMap { $0 as? Combat.CombatantNode }.first)
+        let eye = game.room.camera.simdWorldPosition
+        let direction = simd_normalize(game.stage.aimedWorldPoint() - eye)
+        enemy.simdPosition = eye + direction * 1.3 - SIMD3(0, 1.05 * enemy.simdScale.y, 0)
+        wave(on: game, at: 100)
+        XCTAssertEqual(enemy.health, 1)
+        XCTAssertEqual(game.runSnapshot.mana, 100)
+        XCTAssertTrue(game.status.hasPrefix("Wand strike"))
+        XCTAssertNotNil(
+            game.room.camera.childNode(withName: "wandMeleeSweep", recursively: false)?.action(forKey: "melee"))
+
+        game.combat.update(at: 0)
+        for frame in 1...12 { game.combat.update(at: Double(frame) * 0.05) }
+        enemy.simdPosition = eye + direction * 3 - SIMD3(0, 1.05 * enemy.simdScale.y, 0)
+        game.receive(WandInput(kind: .sample, timestamp: 100.7, yaw: 0.2, pitch: 0))
+        wave(on: game, at: 100.8)
+        XCTAssertEqual(enemy.health, 1, "The host rejects targets beyond two metres.")
+    }
+
+    func testUnheldWavesCannotStrikeWhileHoldingOrUsingBow() {
+        let game = host()
+        defer { game.stop() }
+        game.receive(WandInput(kind: .begin, gesture: 30, timestamp: 99, yaw: 0, pitch: 0))
+        wave(on: game, at: 100)
+        XCTAssertTrue(game.isHolding)
+        XCTAssertFalse(game.status.hasPrefix("Wand strike"))
+        game.controllerDisconnected()
+        game.handleVoice(.shoot)
+        wave(on: game, at: 101)
+        XCTAssertFalse(game.status.hasPrefix("Wand strike"))
+        XCTAssertFalse(game.isHolding)
+        XCTAssertEqual(game.runSnapshot.mana, 100)
+    }
+
+    func testPauseDisconnectAndRestartDiscardIncompleteSwings() {
+        let game = host()
+        defer { game.stop() }
+        func sample(_ time: Double, _ yaw: Float) {
+            game.receive(WandInput(kind: .sample, timestamp: time, yaw: yaw, pitch: 0))
+        }
+        sample(10, 0)
+        game.simulationActive = false
+        game.simulationActive = true
+        sample(10.12, 0.2)
+        XCTAssertFalse(game.status.hasPrefix("Wand strike"))
+        game.controllerDisconnected()
+        sample(10.24, 0.4)
+        XCTAssertFalse(game.status.hasPrefix("Wand strike"))
+        game.restartRun()
+        wave(on: game, at: 11)
+        XCTAssertFalse(game.status.hasPrefix("Wand strike"))
+        confirmSetup(on: game)
+        wave(on: game, at: 12)
+        XCTAssertEqual(game.runSnapshot.countdownRemaining, 3)
+        XCTAssertFalse(game.status.hasPrefix("Wand strike"))
+    }
+
+    private func wave(on game: Encounter, at time: TimeInterval) {
+        for step in 0...6 {
+            game.receive(
+                WandInput(
+                    kind: .sample, timestamp: time + Double(step) * 0.02,
+                    yaw: Float(step) / 6 * 0.22, pitch: 0))
+        }
+    }
+
+    func testHoldingKeepsTheCurrentWandAimAndStartsInkThere() throws {
+        let game = host()
+        defer { game.stop() }
+        game.stage.frame = CGRect(x: 0, y: 0, width: 960, height: 540)
+        game.stage.layoutIfNeeded()
+        for (index, angles) in [SIMD2<Float>(0.3, 0.12), SIMD2<Float>(-0.25, -0.15)].enumerated() {
+            let time = 10 + Double(index)
+            game.receive(WandInput(kind: .sample, timestamp: time, yaw: angles.x, pitch: angles.y))
+            let before = game.stage.aimedWorldPoint()
+            game.receive(
+                WandInput(
+                    kind: .begin, gesture: UInt64(index + 1), timestamp: time + 0.01,
+                    yaw: angles.x, pitch: angles.y))
+            XCTAssertTrue(game.isHolding)
+            let after = game.stage.aimedWorldPoint()
+            XCTAssertLessThan(simd_distance(before, after), 0.01, "Touch-down must not recenter aim")
+            let trail = try XCTUnwrap(game.stage.subviews.compactMap { $0 as? RuneTrail }.first)
+            XCTAssertFalse(trail.isHidden)
+            XCTAssertGreaterThan(abs(trail.center.x - game.stage.bounds.midX), 100)
+            game.receive(WandInput(kind: .cancel, gesture: UInt64(index + 1), timestamp: time + 0.02))
+        }
+    }
+
+    func testStageAnnouncementsFollowTheHordeInsteadOfExperience() throws {
+        let game = Encounter(defaults: nil)
+        game.start()
+        defer { game.stop() }
+        confirmSetup(on: game)
+        game.combat.update(at: 0)
+        for frame in 1...62 { game.combat.update(at: Double(frame) * 0.05) }
+        let banner = try XCTUnwrap(game.stage.subviews.compactMap { $0 as? RunAnnouncementView }.first)
+        XCTAssertEqual(banner.accessibilityLabel, "Level 1. Survive the horde · Health and mana full")
+        game.stage.advanceAnnouncements(deltaTime: 3.1)
+        XCTAssertTrue(game.combat.nyan())
+        for frame in 63...610 { game.combat.update(at: Double(frame) * 0.05) }
+        XCTAssertEqual(game.runSnapshot.level, 1)
+        XCTAssertEqual(game.runSnapshot.xp, 0)
+        XCTAssertTrue(banner.accessibilityLabel?.hasPrefix("Level 1 cleared!") == true)
+        game.stage.advanceAnnouncements(deltaTime: 3.1)
+        for frame in 611...1020 { game.combat.update(at: Double(frame) * 0.05) }
+        XCTAssertEqual(game.runSnapshot.level, 2)
+        XCTAssertEqual(game.runSnapshot.wave, 2)
+        XCTAssertEqual(game.runSnapshot.health, game.runSnapshot.maxHealth)
+        XCTAssertEqual(game.runSnapshot.mana, game.runSnapshot.maxMana)
+        XCTAssertEqual(banner.accessibilityLabel, "Level 2. Survive the horde · Health and mana full")
     }
 
     func testMissingMotionAtReleaseCannotCastReadyShield() {
