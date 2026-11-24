@@ -104,7 +104,8 @@ Mana regenerates at 4 MP per simulation second after a two-second delay from spe
 Keep internal `wave` and `bestWave` wire and storage keys for compatibility.
 
 Zombie attacks start at 1 damage, increasing by 0.5 per level.
-Wand melee, arrows, and physical ally attacks each deal 1 damage.
+Wand melee and physical ally attacks each deal 1 damage.
+Each arrow deals one-third of the target zombie's maximum HP, so a full-health zombie needs three arrow hits.
 Lightning, ice, and devil fire breath each deal 2 damage.
 Fireball shares 5 total damage across a 3-metre blast, weighted toward victims near the centre.
 Preserve fractional zombie HP when distributing that damage.

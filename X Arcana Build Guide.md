@@ -110,7 +110,8 @@ The Nyan curse can coexist with physical allies.
 Start with 100 HP and 100 MP.
 Zombies have 2 HP and use melee attacks only.
 Swipes and bites each deal 1 damage at level 1, increasing by 0.5 each level.
-Wand strikes, arrows, and physical ally attacks deal 1 damage.
+Wand strikes and physical ally attacks deal 1 damage.
+Each arrow deals one-third of the target zombie's maximum HP, so a full-health zombie needs three arrow hits.
 Lightning, ice, and the devil's fire breath deal 2 damage.
 Fireball shares 5 damage across the blast with more damage near its centre.
 Fractional zombie health is retained after a blast.

@@ -62,16 +62,28 @@ final class CombatTests: XCTestCase {
         XCTAssertTrue(target.hasActions)
     }
 
-    func testArrowTravelsThenDealsOneDamage() throws {
+    func testThreeArrowsDefeatAFullHealthZombieWithoutFractionalRemainder() throws {
         let (scene, combat) = makeEncounter()
         let enemy = try XCTUnwrap(combatants(in: scene).first)
-        XCTAssertTrue(combat.shoot(toward: center(enemy)))
-        XCTAssertEqual(enemy.health, 2)
-        XCTAssertFalse(combat.shoot(toward: center(enemy)))
-        _ = advance(combat, from: 0, seconds: 1)
-        XCTAssertEqual(enemy.health, 1)
-        XCTAssertEqual(combat.kills, 0)
-        XCTAssertFalse(enemy.isDefeated)
+        enemy.simdPosition = SIMD3(0, 0, 1.5)
+        let maximum = enemy.health
+        var time = 0.0
+        for hit in 1...3 {
+            XCTAssertTrue(combat.shoot(toward: center(enemy)))
+            XCTAssertFalse(combat.shoot(toward: center(enemy)))
+            time = advance(combat, from: time, seconds: 0.6)
+            if hit < 3 {
+                XCTAssertEqual(enemy.health, maximum * Double(3 - hit) / 3, accuracy: 1e-12)
+                XCTAssertFalse(enemy.isDefeated)
+                XCTAssertEqual(combat.kills, 0)
+            } else {
+                XCTAssertEqual(enemy.health, 0)
+                XCTAssertTrue(enemy.isDefeated)
+                XCTAssertEqual(combat.kills, 1)
+                XCTAssertEqual(combat.runSnapshot.score, 100)
+            }
+        }
+        XCTAssertEqual(combat.runSnapshot.mana, 100)
     }
 
     func testFireballDamagesNearbyZombiesOnceAndLeavesDistantZombieUnhurt() throws {
@@ -835,7 +847,7 @@ final class CombatTests: XCTestCase {
         let enemy = try XCTUnwrap(combatants(in: scene).first)
         enemy.simdPosition = SIMD3(0, 0, 1.5)
         var time = 0.0
-        for _ in 0..<2 {
+        for _ in 0..<3 {
             XCTAssertTrue(combat.shoot(toward: center(enemy)))
             time = advance(combat, from: time, seconds: 0.6)
         }

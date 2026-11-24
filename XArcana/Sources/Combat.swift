@@ -4,6 +4,7 @@ import simd
 
 /// A small, repeatable encounter. Positions and speeds are in metres.
 final class Combat {
+    static let zombieMaxHealth: Double = 2
     static let spawnInterval: TimeInterval = 8
     static func spawnInterval(for level: Int) -> TimeInterval {
         max(2, spawnInterval * pow(0.9, Double(max(0, level - 1))))
@@ -44,7 +45,7 @@ final class Combat {
             lastMeleeAttack = attack
             meleeAttackCount += 1
         }
-        private(set) var health: Double = 2
+        private(set) var health: Double = Combat.zombieMaxHealth
         private(set) var isTransfigured = false
         func setTransfigured(_ value: Bool) { isTransfigured = value }
         private(set) var slowRemaining: TimeInterval = 0
@@ -67,7 +68,8 @@ final class Combat {
         let identity: Identity
         let kind: Kind
         let phase: Float
-        var health: Double = 2
+        let maxHealth = Combat.zombieMaxHealth
+        var health: Double = Combat.zombieMaxHealth
         var attackTimer: TimeInterval
         var motionTime: TimeInterval = 0
         var meleeMotion: (time: TimeInterval, attack: MeleeAttack)?
@@ -804,7 +806,7 @@ final class Combat {
                     } else {
                         burst(at: point, color: victim == nil ? .cyan : .orange)
                     }
-                    if let victim { damage(victim, amount: projectile.isLightning ? 2 : 1) }
+                    if let victim { damage(victim, amount: projectile.isLightning ? 2 : victim.maxHealth / 3) }
                 }
             }
             if impact != nil || projectile.age > 4 || end.y < floorY || !environment.projectileBounds.contains(end) {
@@ -819,7 +821,9 @@ final class Combat {
 
     private func damage(_ enemy: Enemy, amount: Double = 1) {
         guard !run.snapshot.isGameOver, enemy.health > 0, enemy.transfiguration == nil else { return }
-        enemy.health = max(0, enemy.health - amount)
+        let residualHealth = max(0, enemy.health - amount)
+        // Three equal fractional arrow hits must not leave a floating-point sliver alive.
+        enemy.health = residualHealth <= enemy.maxHealth * 1e-12 ? 0 : residualHealth
         enemy.node.setHealth(enemy.health)
         enemy.node.removeAction(forKey: "hit")
         guard enemy.health <= 0 else {

@@ -34,6 +34,7 @@ Say **nyan nyan** to invoke Nyan Cat.
 Nyan, demon, Alan, and Albert are omitted from the in-game spell guide.
 Say **cast** or **shoot** to switch weapons.
 Tap to fire the bow.
+Each arrow deals one-third of a zombie's maximum HP, so three hits defeat a full-health zombie.
 Say **Albert**, **Alan**, **Patronus**, **Lumos**, or **Revelio** for the other spells.
 
 Without head tracking, use **WASD** to move and the **arrow keys** to look around during play.

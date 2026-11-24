@@ -57,7 +57,8 @@ Touch-down captures the current wand aim as the drawing origin, without moving i
 Zombie health retains fractions so fireball can divide its 5-damage budget among all blast victims.
 Distance-based weights give nearer victims a larger share.
 Zombie swipes and bites each deal 1 damage at level 1, increasing by 0.5 each level.
-Wand melee, arrows, and physical ally attacks each deal 1 damage.
+Wand melee and physical ally attacks each deal 1 damage.
+Each arrow deals one-third of the target zombie's maximum HP, so a full-health zombie needs three arrow hits.
 Lightning, ice, and devil fire breath each deal 2 damage.
 Fireball divides 5 total damage across victims within a 3-metre blast.
 Shield health absorbs damage before player health and has no duration.
