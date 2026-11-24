@@ -1,7 +1,7 @@
 import SceneKit
 import UIKit
 
-/// Three sections show bow hits; partial sections retain spell damage precisely.
+/// Two sections show bow hits; partial sections retain spell damage precisely.
 final class ZombieHealthBar: SCNNode {
     private var fills: [SCNNode] = []
     private var continuousFill: SCNNode?
@@ -25,13 +25,13 @@ final class ZombieHealthBar: SCNNode {
         constraints = [SCNBillboardConstraint()]
         addPlane(width: 0.75, height: 0.086, color: UIColor(white: 0.88, alpha: 1), z: 0)
         addPlane(width: 0.73, height: 0.066, color: UIColor(white: 0.055, alpha: 1), z: 0.001)
-        for index in 0..<3 {
+        for index in 0..<2 {
             let fill = addPlane(
-                width: 0.23, height: 0.05, color: UIColor(red: 1, green: 0.34, blue: 0.27, alpha: 1), z: 0.002)
+                width: 0.35, height: 0.05, color: UIColor(red: 1, green: 0.34, blue: 0.27, alpha: 1), z: 0.002)
             fill.name = "Health segment \(index + 1)"
             // Scale around the left edge so fractional damage drains each section in place.
-            fill.pivot = SCNMatrix4MakeTranslation(-0.115, 0, 0)
-            fill.position.x = -0.355 + Float(index) * 0.24
+            fill.pivot = SCNMatrix4MakeTranslation(-0.175, 0, 0)
+            fill.position.x = -0.355 + Float(index) * 0.36
             fills.append(fill)
         }
     }
@@ -46,7 +46,7 @@ final class ZombieHealthBar: SCNNode {
             return
         }
         for (index, fill) in fills.enumerated() {
-            let raw = min(1, max(0, fraction * 3 - Double(index)))
+            let raw = min(1, max(0, fraction * 2 - Double(index)))
             let amount = raw < 1e-9 ? 0 : (raw > 1 - 1e-9 ? 1 : raw)
             fill.simdScale.x = Float(amount)
             fill.isHidden = amount <= 0

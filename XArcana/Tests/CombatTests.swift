@@ -74,10 +74,9 @@ final class CombatTests: XCTestCase {
         XCTAssertLessThan(first.healthBar.position.y, 1.88, "Keep health below the name")
         first.setHealth(1.1)
         let fills = first.healthBar.childNodes.filter { $0.name?.hasPrefix("Health segment") == true }
-        XCTAssertEqual(fills.count, 3)
+        XCTAssertEqual(fills.count, 2)
         XCTAssertEqual(fills[0].simdScale.x, 1)
-        XCTAssertEqual(fills[1].simdScale.x, 0.65, accuracy: 0.00001)
-        XCTAssertTrue(fills[2].isHidden)
+        XCTAssertEqual(fills[1].simdScale.x, 0.1, accuracy: 0.00001)
         XCTAssertTrue(
             second.healthBar.childNodes.filter { $0.name?.hasPrefix("Health segment") == true }.allSatisfy {
                 !$0.isHidden && $0.simdScale.x == 1
@@ -90,22 +89,38 @@ final class CombatTests: XCTestCase {
         XCTAssertTrue(first.healthBar.isHidden)
     }
 
-    func testThreeArrowsDefeatAFullHealthZombieWithoutFractionalRemainder() throws {
+    func testArrowsCanMissWhereElementalAimAssistStillFindsTheZombie() throws {
+        let (scene, combat) = makeEncounter(cameraHeight: 6)
+        let camera = try XCTUnwrap(scene.rootNode.childNode(withName: "Test camera", recursively: false))
+        camera.simdPosition.y = 1.65
+        let zombie = try XCTUnwrap(combatants(in: scene).first)
+        zombie.simdPosition = SIMD3(0.58, 0, 1)
+        let target = SIMD3<Float>(0, 0.1, -5)
+        XCTAssertTrue(combat.shoot(toward: target))
+        var time = advance(combat, from: 0, seconds: 0.6)
+        XCTAssertEqual(zombie.health, 2, "Arrows must not snap from the wider spell-assist cone")
+        zombie.simdPosition = SIMD3(0.58, 0, 1)
+        XCTAssertTrue(combat.cast(toward: target))
+        time = advance(combat, from: time, seconds: 0.6)
+        XCTAssertTrue(zombie.isDefeated, "Elemental spell assistance remains forgiving")
+    }
+
+    func testTwoArrowsDealOneDamageEachAndDefeatAFullHealthZombie() throws {
         let (scene, combat) = makeEncounter()
         let enemy = try XCTUnwrap(combatants(in: scene).first)
         enemy.simdPosition = SIMD3(0, 0, 1.5)
         let maximum = enemy.health
         var time = 0.0
-        for hit in 1...3 {
+        for hit in 1...2 {
             XCTAssertTrue(combat.shoot(toward: center(enemy)))
             XCTAssertFalse(combat.shoot(toward: center(enemy)))
             time = advance(combat, from: time, seconds: 0.6)
-            if hit < 3 {
-                XCTAssertEqual(enemy.health, maximum * Double(3 - hit) / 3, accuracy: 1e-12)
+            if hit < 2 {
+                XCTAssertEqual(enemy.health, maximum - Double(hit), accuracy: 1e-12)
                 XCTAssertFalse(enemy.isDefeated)
                 XCTAssertFalse(enemy.healthBar.isHidden)
                 let fills = enemy.healthBar.childNodes.filter { $0.name?.hasPrefix("Health segment") == true }
-                XCTAssertEqual(fills.filter { !$0.isHidden }.count, 3 - hit)
+                XCTAssertEqual(fills.filter { !$0.isHidden }.count, 2 - hit)
                 XCTAssertEqual(combat.kills, 0)
             } else {
                 XCTAssertEqual(enemy.health, 0)
@@ -879,7 +894,7 @@ final class CombatTests: XCTestCase {
         let enemy = try XCTUnwrap(combatants(in: scene).first)
         enemy.simdPosition = SIMD3(0, 0, 1.5)
         var time = 0.0
-        for _ in 0..<3 {
+        for _ in 0..<2 {
             XCTAssertTrue(combat.shoot(toward: center(enemy)))
             time = advance(combat, from: time, seconds: 0.6)
         }
@@ -925,7 +940,7 @@ final class CombatTests: XCTestCase {
         XCTAssertGreaterThan(combat.kills, 0)
     }
 
-    func testWandMeleeDealsOneDamageToNearestTargetAndTwoSwingsDefeatIt() throws {
+    func testWandMeleeDealsHalfDamageToNearestTargetAndFourSwingsDefeatIt() throws {
         let (scene, combat) = makeEncounter(cameraHeight: 6)
         var time = advance(combat, from: 0, seconds: Combat.spawnInterval + 0.1)
         scene.rootNode.childNode(withName: "Test camera", recursively: false)?.position.y = 1.65
@@ -934,13 +949,15 @@ final class CombatTests: XCTestCase {
         enemies[1].simdPosition = SIMD3(0.8, 0, 3.4)
         let mana = combat.runSnapshot.mana
         XCTAssertTrue(combat.melee(toward: center(enemies[0])))
-        XCTAssertEqual(enemies.map(\.health), [1, 2])
+        XCTAssertEqual(enemies.map(\.health), [1.5, 2])
         XCTAssertEqual(combat.runSnapshot.mana, mana)
         XCTAssertFalse(combat.melee(toward: center(enemies[0])))
         XCTAssertEqual(combat.lastRejection, .cooldown)
-        time = advance(combat, from: time, seconds: 0.6)
-        XCTAssertTrue(combat.melee(toward: center(enemies[0])))
-        XCTAssertEqual(enemies.map(\.health), [0, 2])
+        for hit in 2...4 {
+            time = advance(combat, from: time, seconds: 0.6)
+            XCTAssertTrue(combat.melee(toward: center(enemies[0])))
+            XCTAssertEqual(enemies.map(\.health), [2 - Double(hit) * 0.5, 2])
+        }
         XCTAssertEqual(combat.kills, 1)
     }
 
@@ -1085,14 +1102,14 @@ final class CombatTests: XCTestCase {
         XCTAssertEqual(combat.runSnapshot.shieldHealth, 18.5)
     }
 
-    func testBowCannotFireBeforeItsFourTenthsReloadCompletes() {
+    func testBowCannotFireBeforeItsHalfSecondReloadCompletes() {
         let (_, combat) = makeEncounter(cameraHeight: 6)
         let target = SIMD3<Float>(0, 8, -5)
         XCTAssertTrue(combat.shoot(toward: target))
         var time = advance(combat, from: 0, seconds: 0.3)
         XCTAssertFalse(combat.shoot(toward: target))
         XCTAssertEqual(combat.lastRejection, .cooldown)
-        time = advance(combat, from: time, seconds: 0.083)
+        time = advance(combat, from: time, seconds: 0.183)
         XCTAssertFalse(combat.shoot(toward: target))
         _ = advance(combat, from: time, seconds: 0.034)
         XCTAssertTrue(combat.shoot(toward: target))
@@ -1204,19 +1221,19 @@ final class CombatTests: XCTestCase {
         XCTAssertEqual(combat.pendingSpawns, 0)
     }
 
-    func testBossRequiresFortyFiveArrowHitsAndAwardsOneVictoryWithoutNextStage() throws {
+    func testBossRequiresThirtyOneDamageArrowsAndAwardsOneVictoryWithoutNextStage() throws {
         let (scene, combat) = makeEncounter(cameraHeight: 6, state: finalBossState())
         let boss = try XCTUnwrap(combatants(in: scene).first)
         var events: [Combat.Event] = []
         combat.onEvent = { events.append($0) }
         var time = 0.0
-        for hit in 1...45 {
+        for hit in 1...30 {
             boss.simdPosition = SIMD3(0, 1.5, 1.5)
             XCTAssertTrue(combat.shoot(toward: center(boss)), "Arrow \(hit)")
             time = advance(combat, from: time, seconds: 0.6)
-            XCTAssertEqual(boss.health, max(0, 30 - Double(hit) * 2 / 3), accuracy: 1e-10)
-            XCTAssertEqual(boss.isDefeated, hit == 45)
-            if hit < 45 {
+            XCTAssertEqual(boss.health, max(0, 30 - Double(hit)), accuracy: 1e-10)
+            XCTAssertEqual(boss.isDefeated, hit == 30)
+            if hit < 30 {
                 XCTAssertFalse(combat.runSnapshot.hasWon)
                 XCTAssertFalse(combat.runSnapshot.demonUnlocked)
                 XCTAssertEqual(combat.kills, 0)

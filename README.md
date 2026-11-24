@@ -25,7 +25,7 @@ See the [build and play guide](X%20Arcana%20Build%20Guide.md) for permissions an
 Point the phone at a world or weapon option, tap to select, and double-tap to confirm.
 The first zombie arrives after the three-second countdown.
 In wand mode, hold the screen, draw, and release.
-Wave without touching the screen to strike a nearby zombie for 1 damage.
+Wave without touching the screen to strike a nearby zombie for 0.5 damage.
 Draw Z for lightning, O for fire, V for ice, or a star for the demon.
 Hold still for the shield and release after the readiness vibration.
 The shield absorbs 20 damage and stays until depleted.
@@ -34,7 +34,7 @@ Say **nyan nyan** to invoke Nyan Cat.
 Nyan, demon, Alan, and Albert are omitted from the in-game spell guide.
 Say **cast** or **shoot** to switch weapons.
 Tap to fire the bow.
-Each arrow deals one-third of a zombie's maximum HP, so three hits defeat a full-health zombie.
+Each arrow deals 1 damage, so two hits defeat a full-health 2 HP zombie.
 Say **Albert**, **Alan**, **Patronus**, **Lumos**, or **Revelio** for the other spells.
 
 Without head tracking, use **WASD** to move and the **arrow keys** to look around during play.
@@ -48,7 +48,7 @@ Start with 100 HP and 100 MP.
 Each level is one stage of eight zombies with 2 HP each.
 Spawns start eight seconds apart and become 10% faster each level, down to two seconds apart.
 Zombie hits start at 1 damage and increase by 0.5 each level.
-The bow reloads in 0.4 seconds.
+The bow reloads in 0.5 seconds and uses tighter hitboxes and less aim assistance.
 The demon requires a star, drains 20 MP per second, and vanishes after five seconds or when mana runs out.
 Nyan requires 20 defeats before each use, including the first.
 It transforms only zombies on the field; queued zombies wait until the curse ends.
@@ -85,7 +85,7 @@ The phone bundle excludes the Mac's scene assets and game audio.
 Use `SIMULATOR_ID=<uuid> Tools/build.sh ui` for controller interface tests.
 
 Zombie health bars sit below their names and face the player.
-The three sections represent three bow hits from full health.
+The two sections each represent 1 HP and one bow hit.
 Spell and ally damage also update the bars, including partial sections.
 Bars disappear on death and during Nyan transfiguration.
 
@@ -98,7 +98,7 @@ Both resources refill to 200 for the boss fight.
 He flies slowly around the arena and signals attacks before contact.
 Each claw deals 4 damage, the ground slam deals 8, and fire breath deals 6.
 The boss has a continuous health bar and numeric HP above him.
-Arrows deal the normal zombie-scaled damage to the boss, rather than one-third of boss HP.
+Arrows always deal 1 damage, including against the boss (30 hits from full health).
 Nyan cannot transform the boss.
 Defeating him ends the run in victory, awards 1,250 total boss and stage score, and permanently unlocks the star summon.
 Dying, reaching level 10, and drawing a star do not unlock it.

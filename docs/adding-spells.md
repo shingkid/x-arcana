@@ -87,7 +87,7 @@ The star, V, and O families remain separate.
 Holding still for about one second charges Shield.
 Only release casts the prepared spell.
 Touch-down starts the held drawing at the current phone aim, without moving the wand to the centre.
-Idle wand swings use a separate melee detector, deal 1 damage, and cannot spend mana or recognize a rune.
+Idle wand swings use a separate melee detector, deal 0.5 damage, and cannot spend mana or recognize a rune.
 Nyan accepts only `nyan nyan` by voice and has no gesture mapping.
 The in-game spell guide omits Nyan, demon, Alan, and Albert.
 
@@ -104,8 +104,8 @@ Mana regenerates at 4 MP per simulation second after a two-second delay from spe
 Keep internal `wave` and `bestWave` wire and storage keys for compatibility.
 
 Zombie attacks start at 1 damage, increasing by 0.5 per level.
-Wand melee and physical ally attacks each deal 1 damage.
-Each arrow deals one-third of the target zombie's maximum HP, so a full-health zombie needs three arrow hits.
+Wand melee deals 0.5 damage; physical ally attacks deal 1 damage.
+Each arrow deals 1 damage, so a full-health 2 HP zombie needs two arrows.
 Lightning, ice, and devil fire breath each deal 2 damage.
 Fireball shares 5 total damage across a 3-metre blast, weighted toward victims near the centre.
 Preserve fractional zombie HP when distributing that damage.
@@ -162,7 +162,7 @@ One living zombie becomes one cat; queued zombies do not produce extra cats.
 Spawning pauses during the 27-second curse, then resumes after the current level's spawn interval.
 Only transformed zombies disappear at the song boundary.
 The glasses show Nyan progress out of 20.
-The bow has a 0.4-second reload.
+The bow has a 0.5-second reload and uses tighter hitboxes and less aim assistance.
 
 ## Level 10 final boss
 
@@ -173,7 +173,7 @@ Both resources refill to 200 for the boss fight.
 He flies slowly around the arena and signals attacks before contact.
 Each claw deals 4 damage, the ground slam deals 8, and fire breath deals 6.
 The boss has a continuous health bar and numeric HP above him.
-Arrows deal the normal zombie-scaled damage to the boss, rather than one-third of boss HP.
+Arrows always deal 1 damage, including against the boss (30 hits from full health).
 Nyan cannot transform the boss.
 Defeating him ends the run in victory, awards 1,250 total boss and stage score, and permanently unlocks the star summon.
 Dying, reaching level 10, and drawing a star do not unlock it.

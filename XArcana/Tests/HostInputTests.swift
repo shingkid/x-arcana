@@ -280,7 +280,7 @@ final class HostInputTests: XCTestCase {
         let direction = simd_normalize(game.stage.aimedWorldPoint() - eye)
         enemy.simdPosition = eye + direction * 1.3 - SIMD3(0, 1.05 * enemy.simdScale.y, 0)
         wave(on: game, at: 100)
-        XCTAssertEqual(enemy.health, 1)
+        XCTAssertEqual(enemy.health, 1.5)
         XCTAssertEqual(game.runSnapshot.mana, 100)
         XCTAssertTrue(game.status.hasPrefix("Wand strike"))
         XCTAssertNotNil(
@@ -291,7 +291,7 @@ final class HostInputTests: XCTestCase {
         enemy.simdPosition = eye + direction * 3 - SIMD3(0, 1.05 * enemy.simdScale.y, 0)
         game.receive(WandInput(kind: .sample, timestamp: 100.7, yaw: 0.2, pitch: 0))
         wave(on: game, at: 100.8)
-        XCTAssertEqual(enemy.health, 1, "The host rejects targets beyond two metres.")
+        XCTAssertEqual(enemy.health, 1.5, "The host rejects targets beyond two metres.")
     }
 
     func testUnheldWavesCannotStrikeWhileHoldingOrUsingBow() {

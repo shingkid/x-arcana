@@ -12,7 +12,7 @@ final class Combat {
         max(2, spawnInterval * pow(0.9, Double(max(0, level - 1))))
     }
     static func zombieDamage(for level: Int) -> Double { 1 + 0.5 * Double(max(0, level - 1)) }
-    static let bowReloadDuration: TimeInterval = 0.4
+    static let bowReloadDuration: TimeInterval = 0.5
     static let waveBreakDuration: TimeInterval = 20
 
     enum Event: Equatable {
@@ -603,7 +603,7 @@ final class Combat {
         }.min { simd_distance($0.center, eye) < simd_distance($1.center, eye) }
         meleeCooldown = 0.5
         if let victim {
-            damage(victim)
+            damage(victim, amount: 0.5)
             burst(at: victim.center, color: .cyan)
         }
         return true
@@ -744,12 +744,15 @@ final class Combat {
             let along = simd_dot(offset, direction)
             guard along > 0.3, along < 14 else { continue }
             let miss = simd_length(offset - direction * along)
-            // A visible nine-degree cone helps with hand and head tracking noise.
-            guard miss < max(0.5, along * 0.16) else { continue }
+            // Arrows require closer aim; elemental spells retain their forgiving assist.
+            let assist = attack == .arrow ? max(0.16, along * 0.05) : max(0.5, along * 0.16)
+            guard miss < assist else { continue }
             let score = miss / along + along * 0.001
             if score < bestScore {
                 bestScore = score
-                destination = enemy.center + enemy.velocity * (simd_distance(origin, enemy.center) / speed)
+                destination =
+                    attack == .arrow
+                    ? enemy.center : enemy.center + enemy.velocity * (simd_distance(origin, enemy.center) / speed)
             }
         }
         let travel = simd_normalize(destination - origin)
@@ -1064,12 +1067,14 @@ final class Combat {
             var victim: Enemy?
             for enemy in enemies where enemy.health > 0 && enemy.transfiguration == nil {
                 let foot = enemy.node.simdPosition
-                let padding: Float = projectile.blastRadius > 0 ? 0.2 : 0.12
+                let isArrow = !projectile.isLightning && projectile.blastRadius == 0
+                let padding: Float = isArrow ? 0.04 : (projectile.blastRadius > 0 ? 0.2 : 0.12)
+                let width = enemy.kind.halfWidth * (isArrow ? 0.92 : 1)
                 if let fraction = CombatGeometry.hitFraction(
                     from: start, to: end,
-                    minimum: foot + SIMD3(-enemy.kind.halfWidth, 0.12, -enemy.kind.halfDepth) * enemy.node.simdScale
+                    minimum: foot + SIMD3(-width, 0.12, -enemy.kind.halfDepth) * enemy.node.simdScale
                         - SIMD3(repeating: padding),
-                    maximum: foot + SIMD3(enemy.kind.halfWidth, enemy.kind.height, enemy.kind.halfDepth)
+                    maximum: foot + SIMD3(width, enemy.kind.height, enemy.kind.halfDepth)
                         * enemy.node.simdScale
                         + SIMD3(repeating: padding)),
                     fraction < (impact ?? 2)
@@ -1104,8 +1109,7 @@ final class Combat {
                     if let victim {
                         damage(
                             victim,
-                            amount: projectile.isLightning
-                                ? 2 : (victim.kind == .demonBoss ? Self.zombieMaxHealth : victim.maxHealth) / 3)
+                            amount: projectile.isLightning ? 2 : 1)
                     }
                 }
             }
